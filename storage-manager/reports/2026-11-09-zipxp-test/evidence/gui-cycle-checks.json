@@ -1,0 +1,128 @@
+﻿[
+    {
+        "Utc":  "2026-11-09T17:33:00.1329513Z",
+        "Passed":  true,
+        "Name":  "Actual Windows dashboard launched",
+        "Detail":  "ZipXP · Storage Manager"
+    },
+    {
+        "Utc":  "2026-11-09T17:33:00.2156081Z",
+        "Passed":  true,
+        "Name":  "Managed folder loaded in dashboard",
+        "Detail":  ""
+    },
+    {
+        "Utc":  "2026-11-09T17:33:00.2752643Z",
+        "Passed":  true,
+        "Name":  "UI navigation: Managed folders",
+        "Detail":  ""
+    },
+    {
+        "Utc":  "2026-11-09T17:33:00.3903572Z",
+        "Passed":  true,
+        "Name":  "UI navigation: Storage insights",
+        "Detail":  ""
+    },
+    {
+        "Utc":  "2026-11-09T17:33:00.6871724Z",
+        "Passed":  true,
+        "Name":  "UI navigation: Activity",
+        "Detail":  ""
+    },
+    {
+        "Utc":  "2026-11-09T17:33:00.9013519Z",
+        "Passed":  true,
+        "Name":  "UI navigation: Overview",
+        "Detail":  ""
+    },
+    {
+        "Utc":  "2026-11-09T17:33:00.9513485Z",
+        "Passed":  true,
+        "Name":  "Paused before enabling the automatic policy",
+        "Detail":  ""
+    },
+    {
+        "Utc":  "2026-11-09T17:33:01.4062122Z",
+        "Passed":  true,
+        "Name":  "Policy editor opened",
+        "Detail":  ""
+    },
+    {
+        "Utc":  "2026-11-09T17:33:02.2022439Z",
+        "Passed":  true,
+        "Name":  "Default automatic policy saved and candidates queued",
+        "Detail":  ""
+    },
+    {
+        "Utc":  "2026-11-09T17:33:03.3676589Z",
+        "Passed":  true,
+        "Name":  "Automatic compression starts through desktop Resume",
+        "Detail":  ""
+    },
+    {
+        "Utc":  "2026-11-09T17:33:04.8315242Z",
+        "Passed":  true,
+        "Name":  "Exclusive lock produces a visible retry record",
+        "Detail":  ""
+    },
+    {
+        "Utc":  "2026-11-09T17:33:05.4005685Z",
+        "Passed":  true,
+        "Name":  "Other selected work completes despite the locked file",
+        "Detail":  ""
+    },
+    {
+        "Utc":  "2026-11-09T17:33:06.0038810Z",
+        "Passed":  true,
+        "Name":  "Stop-after-current completes",
+        "Detail":  ""
+    },
+    {
+        "Utc":  "2026-11-09T17:33:09.1693516Z",
+        "Passed":  true,
+        "Name":  "Paused worker starts no additional files",
+        "Detail":  ""
+    },
+    {
+        "Utc":  "2026-11-09T17:33:18.7815299Z",
+        "Passed":  true,
+        "Name":  "Original-folder compression queue drains",
+        "Detail":  ""
+    },
+    {
+        "Utc":  "2026-11-09T17:33:22.3183549Z",
+        "Passed":  true,
+        "Name":  "Dashboard remains responsive during completed job review",
+        "Detail":  ""
+    },
+    {
+        "Utc":  "2026-11-09T17:33:23.1738454Z",
+        "Passed":  true,
+        "Name":  "Recursive decompression preview displayed",
+        "Detail":  ""
+    },
+    {
+        "Utc":  "2026-11-09T17:33:24.0447469Z",
+        "Passed":  true,
+        "Name":  "Decompression disables the automatic policy before execution",
+        "Detail":  ""
+    },
+    {
+        "Utc":  "2026-11-09T17:33:34.9906704Z",
+        "Passed":  true,
+        "Name":  "Recursive decompression queue drains",
+        "Detail":  ""
+    },
+    {
+        "Utc":  "2026-11-09T17:33:35.7772152Z",
+        "Passed":  true,
+        "Name":  "App exited gracefully",
+        "Detail":  "exit=0"
+    },
+    {
+        "Utc":  "2026-11-09T17:33:37.0899166Z",
+        "Passed":  true,
+        "Name":  "Original file compression states restored and temporary probes removed",
+        "Detail":  ""
+    }
+]

@@ -1,0 +1,13 @@
+{
+  "CreatedUtc": "2026-11-09T17:23:51.8277032Z",
+  "File": {
+    "Path": "C:\\Users\\kiran\\zipxp-test\\_zipxp-probe-ea4cba4fcf564565ba94f3e152e3f845\\created-while-offline.txt",
+    "Identity": "C64888FE4888EF0D:000B0000000924920000000000000000",
+    "Logical": 1048576,
+    "Allocated": 1048576,
+    "Written": 134387184518275123,
+    "Attributes": 32,
+    "Links": 1
+  },
+  "Sha256": "3AC3338D67611F3EDB444A8F730D5E3A6559D4640E7B1A2D5FA58BAFBDA3254A"
+}
