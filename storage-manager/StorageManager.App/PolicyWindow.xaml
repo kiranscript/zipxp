@@ -1,0 +1,39 @@
+<Window x:Class="StorageManager.App.PolicyWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Managed folder policy" Width="640" Height="740" MinWidth="540" MinHeight="550" WindowStartupLocation="CenterOwner">
+    <DockPanel Margin="24">
+        <StackPanel DockPanel.Dock="Bottom">
+            <TextBlock x:Name="ErrorText" Foreground="#AC3529" TextWrapping="Wrap" Margin="0,8" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Cancel" IsCancel="True" /><Button Content="Save policy" IsDefault="True" Click="Save_Click" />
+            </StackPanel>
+        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="Folder policy" FontSize="25" FontWeight="SemiBold" />
+                <TextBlock x:Name="FolderPath" TextWrapping="Wrap" Foreground="#526579" Margin="0,6,0,18" />
+                <CheckBox x:Name="EnableBox" Content="Automatically compress existing and future eligible files" Margin="0,0,0,12" />
+                <CheckBox x:Name="RecursiveBox" Content="Include subfolders" Margin="0,0,0,12" />
+                <CheckBox x:Name="BatteryBox" Content="Allow work while on battery" Margin="0,0,0,16" />
+                <TextBlock Text="Limits" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,8" />
+                <UniformGrid Columns="2">
+                    <TextBlock Text="Minimum file size (KiB)" VerticalAlignment="Center" /><TextBox x:Name="MinimumBox" Margin="0,0,0,8" />
+                    <TextBlock Text="Maximum file size (MiB)" VerticalAlignment="Center" /><TextBox x:Name="MaximumBox" Margin="0,0,0,8" />
+                    <TextBlock Text="Minimum estimated saving (KiB)" VerticalAlignment="Center" /><TextBox x:Name="SavingBox" Margin="0,0,0,8" />
+                    <TextBlock Text="Quiet period after changes (seconds)" VerticalAlignment="Center" /><TextBox x:Name="QuietBox" Margin="0,0,0,8" />
+                    <TextBlock Text="Cooldown after work (seconds)" VerticalAlignment="Center" /><TextBox x:Name="CooldownBox" Margin="0,0,0,8" />
+                    <TextBlock Text="Minimum free-space reserve (MiB)" VerticalAlignment="Center" /><TextBox x:Name="ReserveBox" Margin="0,0,0,8" />
+                    <TextBlock Text="Start hour (0–23, local time)" VerticalAlignment="Center" /><TextBox x:Name="StartBox" Margin="0,0,0,8" />
+                    <TextBlock Text="End hour (same as start = all day)" VerticalAlignment="Center" /><TextBox x:Name="EndBox" Margin="0,0,0,8" />
+                </UniformGrid>
+                <TextBlock Text="Exclusions (semicolon-separated relative paths or patterns)" TextWrapping="Wrap" Margin="0,12,0,5" />
+                <TextBox x:Name="ExclusionsBox" Height="65" AcceptsReturn="False" TextWrapping="Wrap" />
+                <TextBlock Text="Examples: cache/*;node_modules/*;*.zip. Excluded subtrees are outside the analysis scope. Initial tested file range is 64 KiB–256 MiB." Foreground="#526579" TextWrapping="Wrap" Margin="0,6,0,12" />
+                <Border Background="#FFF1D9" Padding="12">
+                    <TextBlock x:Name="InheritanceText" TextWrapping="Wrap" Text="Selective automation needs the tray worker. Native directory compression defaults are separate: they can compress new files outside this policy, even when the worker is paused or closed." />
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

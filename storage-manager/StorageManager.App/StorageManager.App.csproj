@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>ZipXP.StorageManager</AssemblyName>
+    <Version>0.2.0</Version>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../StorageManager.Core/StorageManager.Core.csproj" /></ItemGroup>
+</Project>
