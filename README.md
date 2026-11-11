@@ -1,6 +1,6 @@
 # ZipXP Storage Manager
 
-The storage-management implementation of [plan.md](../plan.md), separate from the working `gui/` alpha. Windows 11, C# / WPF, .NET 10, ordinary NTFS compression. Files keep their original names and paths.
+The storage-management implementation of [plan.md](../plan.md), the earlier file-explorer alpha has been removed from this repository. Windows 11, C# / WPF, .NET 10, ordinary NTFS compression. Files keep their original names and paths.
 
 ## Run from WSL
 
@@ -17,8 +17,6 @@ From Windows PowerShell in `storage-manager/`:
 ```powershell
 dotnet run --project StorageManager.App/StorageManager.App.csproj
 ```
-
-The alpha remains available through `./gui/run-wsl.sh`. The applications use independent state. Do not run competing compression/default operations against the same test folder in both apps simultaneously.
 
 ## Use it
 

@@ -18,7 +18,7 @@ Runtime testing found and fixed a launch-check assumption about console-host `Wa
 
 ## Additional real-folder run: accounting defect found
 
-The subsequent [35-file test report](reports/2026-11-09-zipxp-test/REPORT.md) exercised the actual app on `C:\Users\kiran\zipxp-test`, including the default quiet period, closed-window background work, restart catch-up, and GUI decompression. All original hashes and recorded file metadata were preserved and restored.
+A subsequent manual 35-file test (2026-11-09; its evidence files have since been removed from the repository) exercised the actual app on `C:\Users\kiran\zipxp-test`, including the default quiet period, closed-window background work, restart catch-up, and GUI decompression. All original hashes and recorded file metadata were preserved and restored.
 
 That run found an **open allocation-accounting defect** not covered by the earlier aligned-size fixtures: reading post-decompression allocation before closing the mutation handle overstates growth for some non-aligned lengths. Three files produced an erroneous **−84 KiB** round-trip ledger total although final allocation exactly matched the baseline. A separate 65,537-byte reproduction confirmed 131,072 allocated bytes while the mutation handle remained open versus 69,632 after close. Application code remains unchanged by this reporting task. See the report for affected files, raw evidence, and the recommended measurement correction.
 
