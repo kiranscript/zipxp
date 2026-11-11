@@ -54,6 +54,19 @@ function Invoke-Name([string]$Pattern, $Scope = $script:window) {
     }
     throw "Button not found in test window: $Pattern"
 }
+function Invoke-MenuItem([string]$Pattern) {
+    # "More actions" opens a context menu: its items are separate popup elements under the desktop root.
+    Invoke-Name 'More actions'
+    $condition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::MenuItem)
+    $deadline = [DateTime]::UtcNow.AddSeconds(5)
+    do {
+        foreach ($item in [Windows.Automation.AutomationElement]::RootElement.FindAll([Windows.Automation.TreeScope]::Descendants, $condition)) {
+            if ($item.Current.Name -like $Pattern) { $item.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke(); return }
+        }
+        Start-Sleep -Milliseconds 150
+    } while ([DateTime]::UtcNow -lt $deadline)
+    throw "Menu item not found: $Pattern"
+}
 function Invoke-Id([string]$Id) {
     $element = Find-Id $Id
     if (-not $element) { throw "UI control missing: $Id" }
@@ -102,7 +115,7 @@ function Start-App {
 }
 function Exit-App {
     if (-not $app -or $app.HasExited) { return }
-    Invoke-Name 'Exit after current file'
+    Invoke-Name 'Quit ZipXP'
     if (-not $app.WaitForExit(30000)) { throw 'App did not exit gracefully.' }
     Check ($app.ExitCode -eq 0) 'App exited gracefully' ("exit=" + $app.ExitCode)
 }
@@ -120,13 +133,13 @@ try {
     if ((Find-Id 'PauseButton').Current.Name -ne 'Resume all') { Invoke-Id 'PauseButton' }
     Wait-For { (Find-Id 'PauseButton').Current.Name -eq 'Resume all' } 'Paused before enabling the automatic policy'
     Invoke-Name 'Managed folders'
-    Invoke-Name 'Edit policy*'
-    Wait-For { Find-Dialog 'Managed folder policy' } 'Policy editor opened'
-    $editor = Find-Dialog 'Managed folder policy'
+    Invoke-Name 'Folder settings*'
+    Wait-For { Find-Dialog 'Folder settings' } 'Policy editor opened'
+    $editor = Find-Dialog 'Folder settings'
     $enable = Find-Id 'EnableBox' $editor
     $toggle = $enable.GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern)
     if ($toggle.Current.ToggleState -ne [Windows.Automation.ToggleState]::On) { $toggle.Toggle() }
-    Invoke-Name 'Save policy' $editor
+    Invoke-Name 'Save' $editor
     Wait-For { $s = State; $s.Roots[0].Policy.Enabled -and @($s.Jobs | Where-Object { $_.State -eq 'Queued' }).Count -gt 0 } 'Default automatic policy saved and candidates queued'
     Helper -Arguments @('read', $data, (Join-Path $Evidence 'queued-state.json'))
 
@@ -198,9 +211,9 @@ try {
     }
 
     Invoke-Name 'Managed folders'
-    Invoke-Name 'Decompress folder*'
-    Wait-For { Find-Dialog 'Decompress preview' } 'Recursive decompression preview displayed'
-    $preview = Find-Dialog 'Decompress preview'
+    Invoke-Name 'Undo compression*'
+    Wait-For { Find-Dialog 'Undo compression preview' } 'Recursive decompression preview displayed'
+    $preview = Find-Dialog 'Undo compression preview'
     $previewText = $preview.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.Condition]::TrueCondition) | ForEach-Object { $_.Current.Name }
     $previewText | Set-Content -Encoding UTF8 -LiteralPath (Join-Path $Evidence 'decompression-preview.txt')
     Confirm-Yes $preview

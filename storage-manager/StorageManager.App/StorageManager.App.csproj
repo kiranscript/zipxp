@@ -6,6 +6,8 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>ZipXP.StorageManager</AssemblyName>
     <Version>0.2.0</Version>
+    <ApplicationIcon>Assets\zipxp.ico</ApplicationIcon>
   </PropertyGroup>
+  <ItemGroup><Resource Include="Assets\zipxp.ico" /></ItemGroup>
   <ItemGroup><ProjectReference Include="../StorageManager.Core/StorageManager.Core.csproj" /></ItemGroup>
 </Project>

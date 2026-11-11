@@ -54,23 +54,29 @@ public partial class App : Application
         catch (Exception ex)
         {
             if (e.Args.Contains("--launch-check")) Console.Error.WriteLine(ex);
-            else MessageBox.Show(ex.Message, "Storage Manager startup failed", MessageBoxButton.OK, MessageBoxImage.Error);
+            else MessageBox.Show(ex.Message, "ZipXP couldn't start", MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(1);
         }
+    }
+
+    private static System.Drawing.Icon LoadIcon()
+    {
+        try { using var stream = GetResourceStream(new Uri("pack://application:,,,/Assets/zipxp.ico"))!.Stream; return new System.Drawing.Icon(stream); }
+        catch (Exception) { return System.Drawing.SystemIcons.Application; }
     }
 
     private void CreateTray()
     {
         var menu = new Forms.ContextMenuStrip();
-        menu.Items.Add("Open storage dashboard", null, (_, _) => Dispatcher.BeginInvoke(ShowMain));
-        var pause = menu.Items.Add("Pause all / resume", null, (_, _) => Dispatcher.BeginInvoke(async () =>
+        menu.Items.Add("Open ZipXP", null, (_, _) => Dispatcher.BeginInvoke(ShowMain));
+        var pause = menu.Items.Add("Pause", null, (_, _) => Dispatcher.BeginInvoke(async () =>
         {
             try { await Engine.SetPausedAsync(!Engine.Paused); }
-            catch (Exception ex) { tray?.ShowBalloonTip(5000, "Pause setting failed", ex.Message, Forms.ToolTipIcon.Error); }
+            catch (Exception ex) { tray?.ShowBalloonTip(5000, "Couldn't pause or resume", ex.Message, Forms.ToolTipIcon.Error); }
         }));
-        menu.Opening += (_, _) => pause.Text = Engine.Paused ? "Resume automation" : "Pause after current file";
-        menu.Items.Add("Exit after current file", null, (_, _) => Dispatcher.BeginInvoke(async () => await ExitAsync()));
-        tray = new Forms.NotifyIcon { Icon = System.Drawing.SystemIcons.Application, Text = "ZipXP Storage Manager", ContextMenuStrip = menu, Visible = true };
+        menu.Opening += (_, _) => pause.Text = Engine.Paused ? "Resume" : "Pause";
+        menu.Items.Add("Quit ZipXP", null, (_, _) => Dispatcher.BeginInvoke(async () => await ExitAsync()));
+        tray = new Forms.NotifyIcon { Icon = LoadIcon(), Text = "ZipXP Storage Manager", ContextMenuStrip = menu, Visible = true };
         tray.DoubleClick += (_, _) => Dispatcher.BeginInvoke(ShowMain);
     }
 
@@ -84,7 +90,7 @@ public partial class App : Application
     {
         if (store?.Setting("trayExplained") == "true") return;
         store?.Setting("trayExplained", "true");
-        tray?.ShowBalloonTip(7000, "Storage Manager is still running", "Closing the window keeps enabled policies running in the tray. Use Pause or Exit from the tray menu to stop new work.", Forms.ToolTipIcon.Info);
+        tray?.ShowBalloonTip(7000, "ZipXP is still running", "It keeps saving space in the background. To stop it, right-click this icon and choose Pause or Quit ZipXP.", Forms.ToolTipIcon.Info);
     }
 
     public async Task ExitAsync()

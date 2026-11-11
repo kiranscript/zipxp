@@ -23,14 +23,19 @@ public sealed record FolderPolicy
         if (MinimumBytes < 65536 || MaximumBytes > 256L * 1024 * 1024 || MinimumBytes > MaximumBytes ||
             MinimumSavingBytes < 0 || ReserveBytes < 256L * 1024 * 1024 || QuietSeconds < 0 ||
             CooldownSeconds < 0 || StartHour is < 0 or > 23 || EndHour is < 0 or > 23)
-            throw new ArgumentException("Use sizes from 64 KiB to 256 MiB, at least 256 MiB reserve, nonnegative delays, and hours 0–23.");
+            throw new ArgumentException("Use sizes from 64 KB to 256 MB, at least 256 MB reserve, nonnegative delays, and hours 0–23.");
     }
 
     public bool InSchedule(DateTime local) => StartHour == EndHour || (StartHour < EndHour
         ? local.Hour >= StartHour && local.Hour < EndHour : local.Hour >= StartHour || local.Hour < EndHour);
 }
 
-public sealed record ManagedFolder(string Id, string Path, FolderPolicy Policy);
+public sealed record ManagedFolder(string Id, string Path, FolderPolicy Policy)
+{
+    /// <summary>Last part of the path, for display ("Invoices" for C:\\Work\\Invoices).</summary>
+    [JsonIgnore] public string Name { get { var name = System.IO.Path.GetFileName(Path.TrimEnd('\\')); return name.Length > 0 ? name : Path; } }
+    [JsonIgnore] public string Parent => System.IO.Path.GetDirectoryName(Path.TrimEnd('\\')) ?? "";
+}
 public sealed record FileRecord(string Path, string Identity, long Logical, long? Allocated, long Written,
     FileAttributes Attributes, uint Links)
 {
@@ -81,9 +86,16 @@ public static class Display
     {
         if (bytes == null) return "—";
         double size = bytes.Value;
-        string[] units = ["B", "KiB", "MiB", "GiB", "TiB"];
+        // Same convention as Windows Explorer: 1 KB = 1,024 bytes.
+        string[] units = ["bytes", "KB", "MB", "GB", "TB"];
         var unit = 0;
         while (Math.Abs(size) >= 1024 && unit < units.Length - 1) { size /= 1024; unit++; }
-        return $"{size:N1} {units[unit]}";
+        // 1,013.9 KB reads better as 1.0 MB, as in Explorer.
+        if (unit > 0 && unit < units.Length - 1 && Math.Round(Math.Abs(size), 1) >= 1000) { size /= 1024; unit++; }
+        if (unit == 0) return $"{size:N0} bytes";
+        // About three significant figures, like Explorer: "960 KB", "1 MB", "51.8 GB".
+        var text = Math.Abs(size) >= 100 ? size.ToString("N0") : size.ToString("N1");
+        if (text.EndsWith(".0", StringComparison.Ordinal)) text = text[..^2];
+        return $"{text} {units[unit]}";
     }
 }
