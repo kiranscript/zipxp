@@ -74,7 +74,7 @@ public partial class MainWindow : Window
         public string FileName => System.IO.Path.GetFileName(Source.Path);
         public string FolderName => System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(Source.Path)?.TrimEnd('\\') ?? "");
         public string Action => Source.State == "Succeeded"
-            ? Source.Operation switch { "Compress" => "Compressed", "Decompress" => "Undid compression", "ClearDefault" => "Turned off Windows compression", _ => Plain.Action(Source.Operation) }
+            ? Source.Operation switch { "Compress" => "Compressed", "Decompress" => "Restored original size", "ClearDefault" => "Turned off Windows compression", _ => Plain.Action(Source.Operation) }
             : Plain.Action(Source.Operation);
         public string State => Plain.JobState(Source.State).Text;
         public string Tone => Plain.JobState(Source.State).Tone;
@@ -168,6 +168,7 @@ public partial class MainWindow : Window
 
 
             OverviewCompressButton.Visibility = known.Length > 0 && estimate > 0 ? Visibility.Visible : Visibility.Collapsed;
+            OverviewRestoreButton.Visibility = shrunk > 0 ? Visibility.Visible : Visibility.Collapsed;
             var unread = known.Sum(r => r.Scan!.Unknown);
             ScopeCard.Text = snapshot.Roots.Count == 0 ? "No folders added yet"
                 : known.Length == snapshot.Roots.Count ? Plain.Count(snapshot.Roots.Count, "folder")
@@ -175,14 +176,14 @@ public partial class MainWindow : Window
             var saved = snapshot.Measured.Delta;
             MeasuredCard.Text = snapshot.Roots.Count == 0 ? "—" : Plain.Saved(saved);
             MeasuredCaption.Text = snapshot.Measured.Measured == 0 ? ""
-                : $"from {Plain.Count(snapshot.Measured.Measured, "compressed file")}" + (saved < 0 ? ". Files take up more room than before, for example after decompressing." : "");
+                : $"from {Plain.Count(snapshot.Measured.Measured, "compressed file")}" + (saved < 0 ? ". Files take up more room than before, for example after restoring the original size." : "");
             VolumesList.ItemsSource = snapshot.Volumes;
             VolumesEmpty.Visibility = snapshot.Volumes.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             VolumesNote.Visibility = Visibility.Collapsed;
             int pending = jobs.Count(j => j.Pending), failed = jobs.Count(j => j.State == "Failed");
             NavActivity.Content = failed > 0 ? $"Activity · {failed} failed" : "Activity";
             var lastDone = jobs.Where(j => j.State == "Succeeded" && j.FinishedUtc != null).OrderByDescending(j => j.FinishedUtc).FirstOrDefault();
-            var lastText = lastDone == null ? "Nothing compressed yet." : $"{Plain.When(lastDone.FinishedUtc!.Value)} · {(lastDone.Operation switch { "Compress" => "compressed", "Decompress" => "decompressed", _ => "updated" })} {System.IO.Path.GetFileName(lastDone.Path)}";
+            var lastText = lastDone == null ? "Nothing compressed yet." : $"{Plain.When(lastDone.FinishedUtc!.Value)} · {(lastDone.Operation switch { "Compress" => "compressed", "Decompress" => "restored", _ => "updated" })} {System.IO.Path.GetFileName(lastDone.Path)}";
             ActivityCard.Text = pending == 0 ? "Nothing waiting" : Plain.Count(pending, "file") + " waiting";
             WatchNote.Visibility = pending == 0 ? Visibility.Visible : Visibility.Collapsed;
             // Auto-compress stops when ZipXP is closed: say so, quietly and for as long as it's true.
@@ -208,11 +209,11 @@ public partial class MainWindow : Window
                 : selectedRow?.Scan is { Candidates: 0 } ? "Everything worth compressing in this folder is already compressed." : "Select a folder that has been scanned.";
             var anyCompressed = selectedRow?.Scan is { } sc && sc.Logical > sc.Allocated;
             FolderUndoButton.IsEnabled = Selected != null && anyCompressed;
-            FolderUndoButton.ToolTip = FolderUndoButton.IsEnabled ? "Decompress every file in the selected folder, putting it back to normal, and stop compressing it automatically."
-                : "Nothing in the selected folder is compressed right now.";
+            FolderUndoButton.ToolTip = FolderUndoButton.IsEnabled ? "Uncompress every file in the selected folder so it takes its full, original space again, and turn off automatic compression for it. No files are deleted."
+                : "Nothing in the selected folder is compressed right now, so it already takes its original space.";
             var selectedDone = selectedRow?.Scan is { Candidates: 0 };
             FoldersNote.Text = selectedDone ? "Everything worth compressing in this folder is already compressed."
-                : "New folders are only scanned. Turn on Auto-compress in Folder settings, or choose Compress now. You can undo it at any time.";
+                : "New folders are only scanned. Turn on Auto-compress in Folder settings, or choose Compress now. You can restore the original size at any time.";
             FoldersNote.Visibility = snapshot.Roots.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
             hasFolders = snapshot.Roots.Count > 0; ShowPage(Math.Max(0, Pages.SelectedIndex));
             WelcomeCard.Visibility = hasFolders ? Visibility.Collapsed : Visibility.Visible;
@@ -360,19 +361,32 @@ public partial class MainWindow : Window
     });
     private async void Remove_Click(object sender, RoutedEventArgs e) => await Command(async () =>
     {
-        var root = RequireRoot(); await Engine.RemoveAsync(root.Id); drill = null;
+        var root = RequireRoot();
+        var scan = Engine.Store.Scans(root.Id).FirstOrDefault();
+        if (scan is { } s && s.Logical > s.Allocated)
+        {
+            var answer = MessageBox.Show(this,
+                $"Files in this folder are still compressed, saving {Display.Bytes(s.Logical - s.Allocated)}.\n\n" +
+                "Yes: restore the original size first (you'll see a preview, and the folder stays in ZipXP until you stop managing it).\n" +
+                "No: stop managing it now and leave the files compressed. They still open normally.\n" +
+                "Cancel: do nothing.",
+                "Stop managing this folder", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+            if (answer == MessageBoxResult.Cancel) return;
+            if (answer == MessageBoxResult.Yes) { await RunScopeJob(root, "Decompress"); return; }
+        }
+        await Engine.RemoveAsync(root.Id); drill = null;
         Notify("ZipXP no longer manages that folder. Its files are exactly as they were.");
     });
-    private async void ScopeJob_Click(object sender, RoutedEventArgs e) => await Command(async () =>
+    private async void ScopeJob_Click(object sender, RoutedEventArgs e) => await Command(() => RunScopeJob(RequireRoot(), (string)((FrameworkElement)sender).Tag));
+    private async Task RunScopeJob(ManagedFolder root, string operation)
     {
-        var root = RequireRoot(); var operation = (string)((FrameworkElement)sender).Tag;
         Notify("Checking the folder…");
         var preview = await Engine.PreviewAsync(root, operation);
         var builtIn = preview.NativeDefaults > 0 ? $"{Plain.BuiltIn} is switched on in {Plain.Count(preview.NativeDefaults, "folder")} here." : null;
         var (title, summary, explanation) = operation switch
         {
-            "Decompress" => ("Undo compression preview", $"{Plain.Count(preview.Files, "compressed file")} to decompress · {Display.Bytes(preview.LogicalBytes)} in total",
-                "Automatic compression for this folder will be turned off first, so the files aren't compressed again." + (builtIn == null ? "" : $"\n\n{builtIn} Windows may still compress new files there until you turn that off from the More menu.")),
+            "Decompress" => ("Restore original size", RestoreSummary(root, preview),
+                "No files are deleted; they are uncompressed and take their full space again.\nAutomatic compression is turned off for this folder first, so nothing is compressed again. The folder stays in ZipXP." + (builtIn == null ? "" : $"\n\n{builtIn} Windows may still compress new files there until you turn that off from the More menu.")),
             "ClearDefault" => ("Turn off " + Plain.BuiltIn, $"{Plain.Count(preview.Files, "folder")} to update",
                 "Windows will stop compressing new files in these folders by itself. Files that are already compressed stay compressed."),
             _ => ("Compress preview", $"{Plain.Count(preview.Files, "file")} worth compressing · {Display.Bytes(preview.LogicalBytes)} in total",
@@ -383,6 +397,34 @@ public partial class MainWindow : Window
         if (MessageBox.Show(this, text, title, MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes) { BannerHost.Visibility = Visibility.Collapsed; return; }
         var count = await Engine.QueueScopeAsync(root.Id, operation);
         Notify($"{Plain.Count(count, "item")} added to the queue." + (Engine.Paused ? " ZipXP is paused, so choose Resume all to start." : " See Activity for progress."));
+    }
+    private string RestoreSummary(ManagedFolder root, JobPreview preview)
+    {
+        var line = $"{Plain.Count(preview.Files, "compressed file")} will be uncompressed";
+        if (Engine.Store.Scans(root.Id).FirstOrDefault() is { } s && s.Logical > s.Allocated)
+            line += $", so this folder grows from {Display.Bytes(s.Allocated)} to {Display.Bytes(s.Logical)}";
+        return line + ".";
+    }
+    /// <summary>Overview: undo compression in every managed folder that has compressed files, after one confirmation.</summary>
+    private async void RestoreAll_Click(object sender, RoutedEventArgs e) => await Command(async () =>
+    {
+        var roots = Engine.Store.Roots().Where(r => Engine.Store.Scans(r.Id).FirstOrDefault() is { } s && s.Logical > s.Allocated).ToArray();
+        if (roots.Length == 0) { Notify("Nothing is compressed right now, so everything already takes its original space."); return; }
+        Notify("Checking your folders…");
+        long files = 0, grow = 0, headroom = 0;
+        foreach (var root in roots)
+        {
+            var preview = await Engine.PreviewAsync(root, "Decompress");
+            files += preview.Files; headroom = Math.Max(headroom, preview.RequiredHeadroom);
+            var s = Engine.Store.Scans(root.Id).First(); grow += s.Logical - s.Allocated;
+        }
+        var text = $"{Plain.Count(files, "compressed file")} in {Plain.Count(roots.Length, "folder")} will be uncompressed, so your folders take up {Display.Bytes(grow)} more space.\n"
+            + $"Needs at least {Display.Bytes(headroom)} of free space on the drive while it works.\n\n"
+            + "No files are deleted. Automatic compression is turned off for these folders first, so nothing is compressed again. The folders stay in ZipXP.\n\nGo ahead?";
+        if (MessageBox.Show(this, text, "Restore original size", MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes) { BannerHost.Visibility = Visibility.Collapsed; return; }
+        var queued = 0;
+        foreach (var root in roots) queued += await Engine.QueueScopeAsync(root.Id, "Decompress");
+        Notify($"{Plain.Count(queued, "item")} added to the queue." + (Engine.Paused ? " ZipXP is paused, so choose Resume all to start." : " See Activity for progress."));
     });
     /// <summary>Overview: compress everything worth compressing in every managed folder, after one confirmation.</summary>
     private async void CompressAll_Click(object sender, RoutedEventArgs e) => await Command(async () =>
@@ -402,7 +444,7 @@ public partial class MainWindow : Window
         var text = $"{Plain.Count(files, "file")} worth compressing in {Plain.Count(targets.Count, "folder")} · {Display.Bytes(bytes)} in total\n"
             + $"Needs at least {Display.Bytes(headroom)} of free space on the drive while it works.\n"
             + (complete ? "Everything in those folders was checked.\n" : "Items that couldn't be read are left out.\n")
-            + "\nThey will be compressed once, in the background, and you can undo it later from Managed folders > Undo compression. This does not turn on automatic compression.\n\nGo ahead?";
+            + "\nThey will be compressed once, in the background, and you can undo it later from Managed folders > Restore original size. This does not turn on automatic compression.\n\nGo ahead?";
         if (MessageBox.Show(this, text, "Compress preview", MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes) { BannerHost.Visibility = Visibility.Collapsed; return; }
         var queued = 0;
         foreach (var root in targets) queued += await Engine.QueueScopeAsync(root.Id, "Compress");
@@ -414,9 +456,9 @@ public partial class MainWindow : Window
         var selected = InsightsGrid.SelectedItems.Cast<InsightRow>().Select(r => r.Source).Where(o => o.File is { Directory: false, Compressed: true }).ToArray();
         if (selected.Length == 0) throw new InvalidOperationException("Select one or more compressed files in the list first.");
         var space = root.Policy.ReserveBytes + selected.Max(o => o.File!.Logical);
-        if (MessageBox.Show(this, $"Decompress {Plain.Count(selected.Length, "selected file")}?\n\nNeeds at least {Display.Bytes(space)} of free space on the drive.\n\nAutomatic compression for this folder will be turned off, so the files aren't compressed again.", "Undo compression for selected files", MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes) return;
+        if (MessageBox.Show(this, $"Restore the original size of {Plain.Count(selected.Length, "selected file")}?\n\nThey will be uncompressed and take their full space again. No files are deleted.\nNeeds at least {Display.Bytes(space)} of free space on the drive.\n\nAutomatic compression for this folder will be turned off, so the files aren't compressed again.", "Restore original size of selected files", MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes) return;
         var count = await Engine.QueueSelectedAsync(root.Id, selected);
-        Notify($"{Plain.Count(count, "file")} queued to decompress. Automatic compression is now off for this folder.");
+        Notify($"{Plain.Count(count, "file")} queued to restore. Automatic compression is now off for this folder.");
     });
     private async void Pause_Click(object sender, RoutedEventArgs e)
     {
@@ -560,13 +602,13 @@ public partial class MainWindow : Window
         EmptyJobs.Visibility = visible.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
         JobsGrid.Visibility = visible.Length == 0 ? Visibility.Hidden : Visibility.Visible;
         (EmptyJobsTitle.Text, EmptyJobsHint.Text) = jobs.Count == 0
-            ? ("Nothing here yet", "Every file ZipXP compresses or decompresses is listed here, along with anything it had to skip.")
+            ? ("Nothing here yet", "Every file ZipXP compresses or restores is listed here, along with anything it had to skip.")
             : ("Nothing matches", "Try a different search, or choose Everything in the Show list.");
     }
     private void InsightsSelection_Changed(object sender, SelectionChangedEventArgs e)
     {
         DecompressSelectedButton.IsEnabled = InsightsGrid.SelectedItems.Cast<InsightRow>().Any(r => r.Source.File is { Directory: false, Compressed: true });
-        DecompressSelectedButton.ToolTip = DecompressSelectedButton.IsEnabled ? "Decompress the selected files, putting them back to normal." : "Select one or more compressed files first.";
+        DecompressSelectedButton.ToolTip = DecompressSelectedButton.IsEnabled ? "Uncompress the selected files so they take their full, original space again. No files are deleted." : "Select one or more compressed files first.";
     }
     private void UpdateRetry() => ShowFolderButton.Visibility = JobsGrid.SelectedItems.Count == 1 ? Visibility.Visible : Visibility.Collapsed;
     private void UpdateRetry2() => RetryButton.IsEnabled = JobsGrid.SelectedItems.Cast<JobRow>().Any(j => j.Source.State is "Failed" or "Skipped");

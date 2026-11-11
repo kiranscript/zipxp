@@ -33,7 +33,7 @@ Adding a folder for analysis does not compress it. **Compress now** is an explic
 
 ### Decompression and stopping management
 
-- **Undo compression…** (Managed folders toolbar, per folder) or **Undo compression…** on Storage insights (selected files) first disables automatic compression for that managed root and cancels pending compression. Re-enabling automation while decompression is pending is rejected.
+- **Restore original size…** (Overview for all folders, Managed folders toolbar per folder, or Storage insights for selected files) uncompresses files so they take their full space again; no files are deleted. It first disables automatic compression for that managed root and cancels pending compression. Re-enabling automation while decompression is pending is rejected.
 - Decompression does not clear existing NTFS directory defaults. The preview reports those defaults, incomplete coverage, omitted entries, and the largest sequential operation's required headroom.
 - **Turn off Windows' own folder compression** (More menu; formerly "Clear native defaults") is a separate recursive directory-only job within the current policy scope. Existing files stay compressed. Excluded/unreadable/unsupported directories may retain defaults; inspect the next scan.
 - **Stop managing this folder** (More menu) removes the root, observations, and future jobs. Existing files and native defaults remain unchanged. Historical job measurements are retained.
@@ -84,6 +84,8 @@ For an isolated instance, pass a Windows path:
 ```bash
 ./storage-manager/run-wsl.sh --data-dir 'C:\Temp\ZipXP-isolated'
 ```
+
+Press Ctrl+C in the terminal to stop a dev run: the launcher asks the app to quit cleanly (stopping the worker and removing the tray icon), and force-ends it after about 10 seconds if it doesn't.
 
 Only one worker runs for a user/data directory. A second launch activates the existing window. The policy database must not be placed inside a managed root. Startup registration is off unless explicitly enabled. Native compression persists independently of app state.
 

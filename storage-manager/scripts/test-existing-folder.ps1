@@ -211,9 +211,9 @@ try {
     }
 
     Invoke-Name 'Managed folders'
-    Invoke-Name 'Undo compression*'
-    Wait-For { Find-Dialog 'Undo compression preview' } 'Recursive decompression preview displayed'
-    $preview = Find-Dialog 'Undo compression preview'
+    Invoke-Name 'Restore original size*'
+    Wait-For { Find-Dialog 'Restore original size' } 'Recursive decompression preview displayed'
+    $preview = Find-Dialog 'Restore original size'
     $previewText = $preview.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.Condition]::TrueCondition) | ForEach-Object { $_.Current.Name }
     $previewText | Set-Content -Encoding UTF8 -LiteralPath (Join-Path $Evidence 'decompression-preview.txt')
     Confirm-Yes $preview

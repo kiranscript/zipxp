@@ -44,6 +44,19 @@ public partial class App : Application
             CreateTray();
             Engine.Start();
             if (!e.Args.Contains("--tray")) ShowMain();
+            // Dev launcher (run-wsl.sh) creates this file on Ctrl+C to ask for a clean shutdown.
+            var quitIndex = Array.IndexOf(e.Args, "--quit-file");
+            if (quitIndex >= 0 && quitIndex + 1 < e.Args.Length)
+            {
+                var quitFile = e.Args[quitIndex + 1];
+                var quitTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+                quitTimer.Tick += async (_, _) =>
+                {
+                    bool requested; try { requested = File.Exists(quitFile); } catch (IOException) { requested = false; }
+                    if (requested) { quitTimer.Stop(); await ExitAsync(); }
+                };
+                quitTimer.Start();
+            }
             if (e.Args.Contains("--launch-check"))
             {
                 var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(12) };

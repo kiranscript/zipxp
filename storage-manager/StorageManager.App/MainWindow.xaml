@@ -140,13 +140,17 @@
                                                     <Border Grid.Column="1" Background="{DynamicResource SystemFillColorSuccessBrush}" CornerRadius="0,6,6,0" />
                                                 </Grid>
                                             </Border>
-                                            <WrapPanel>
-                                                <Ellipse Width="10" Height="10" Fill="{DynamicResource AccentFillColorDefaultBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                                                <TextBlock x:Name="AllocatedCard" Text="—" FontWeight="SemiBold" Margin="0,0,24,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                                                <Ellipse Width="10" Height="10" Fill="{DynamicResource SystemFillColorSuccessBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                                                <TextBlock x:Name="SavedLegend" Text="—" FontWeight="SemiBold" Margin="0,0,24,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                                                <TextBlock x:Name="OriginalCard" Text="—" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                            </WrapPanel>
+                                            <DockPanel>
+                                                <local:GlyphButton x:Name="OverviewRestoreButton" DockPanel.Dock="Right" Content="Restore original size…" Glyph="&#xE7A7;" Margin="12,-6,0,-8" Visibility="Collapsed" Click="RestoreAll_Click"
+                                                                   ToolTip="Uncompress every compressed file in all your folders so they take their original space again. No files are deleted, and automatic compression is turned off." />
+                                                <WrapPanel VerticalAlignment="Center">
+                                                    <Ellipse Width="10" Height="10" Fill="{DynamicResource AccentFillColorDefaultBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                                    <TextBlock x:Name="AllocatedCard" Text="—" FontWeight="SemiBold" Margin="0,0,24,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                    <Ellipse Width="10" Height="10" Fill="{DynamicResource SystemFillColorSuccessBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                                    <TextBlock x:Name="SavedLegend" Text="—" FontWeight="SemiBold" Margin="0,0,24,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                    <TextBlock x:Name="OriginalCard" Text="—" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                                </WrapPanel>
+                                            </DockPanel>
                                         </StackPanel>
                                     </Border>
 
@@ -258,10 +262,10 @@
                                                    ToolTip="Turn automatic compression on or off and choose which files it applies to." />
                                 <local:GlyphButton x:Name="FolderCompressButton" ToolTipService.ShowOnDisabled="True" Content="Compress now…" Glyph="&#xE73F;" Tag="Compress" Click="ScopeJob_Click"
                                                    ToolTip="Compress the files worth compressing once, without turning on automatic compression." />
-                                <local:GlyphButton x:Name="FolderUndoButton" ToolTipService.ShowOnDisabled="True" Content="Undo compression…" Glyph="&#xE7A7;" Tag="Decompress" Click="ScopeJob_Click"
-                                                   ToolTip="Decompress every file in the selected folder, putting it back to normal, and stop compressing it automatically." />
+                                <local:GlyphButton x:Name="FolderUndoButton" ToolTipService.ShowOnDisabled="True" Content="Restore original size…" Glyph="&#xE7A7;" Tag="Decompress" Click="ScopeJob_Click"
+                                                   ToolTip="Uncompress every file in the selected folder so it takes its full, original space again, and turn off automatic compression for it. No files are deleted." />
                                 <local:GlyphButton Content="More" Glyph="&#xE712;" Margin="0,0,8,8"
-                                        Click="More_Click" AutomationProperties.Name="More actions" ToolTip="More actions for the selected folder: pause it, undo compression, or stop managing it">
+                                        Click="More_Click" AutomationProperties.Name="More actions" ToolTip="More actions for the selected folder: pause it, or stop managing it">
                                     <Button.ContextMenu>
                                         <ContextMenu>
                                             <MenuItem x:Name="FolderPauseItem" Header="Pause this folder" Click="FolderPause_Click"
@@ -269,8 +273,8 @@
                                             <MenuItem Header="Turn off Windows' own folder compression…" Tag="ClearDefault" Click="ScopeJob_Click"
                                                       ToolTip="Windows can compress every new file in a folder by itself. This switches that off so only ZipXP decides." />
                                             <Separator />
-                                            <MenuItem Header="Stop managing this folder" Click="Remove_Click"
-                                                      ToolTip="Removes the folder from ZipXP. Its files are left exactly as they are." />
+                                            <MenuItem Header="Stop managing this folder…" Click="Remove_Click"
+                                                      ToolTip="Removes the folder from ZipXP. Files already compressed stay compressed. To get the original size back, use Restore original size first." />
                                         </ContextMenu>
                                     </Button.ContextMenu>
                                 </local:GlyphButton>
@@ -322,8 +326,8 @@
                         <Grid>
                             <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="36" /></Grid.RowDefinitions>
                             <DockPanel Margin="0,0,0,4">
-                                <local:GlyphButton x:Name="DecompressSelectedButton" ToolTipService.ShowOnDisabled="True" IsEnabled="False" DockPanel.Dock="Right" Content="Undo compression…" Glyph="&#xE7A7;" Click="SelectedDecompress_Click" Margin="8,0,0,8"
-                                                   ToolTip="Decompress the selected files, putting them back to normal." />
+                                <local:GlyphButton x:Name="DecompressSelectedButton" ToolTipService.ShowOnDisabled="True" IsEnabled="False" DockPanel.Dock="Right" Content="Restore original size…" Glyph="&#xE7A7;" Click="SelectedDecompress_Click" Margin="8,0,0,8"
+                                                   ToolTip="Uncompress the selected files so they take their full, original space again. No files are deleted." />
                                                                                     <StackPanel x:Name="FolderPickerPanel" DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,8">
                         <TextBlock Text="Folder" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,10,0" />
                         <ComboBox x:Name="RootPicker" SelectionChanged="Root_Changed" Width="190" AutomationProperties.Name="Folder to show">
@@ -458,7 +462,7 @@
                                     </StackPanel>
                                 </Grid>
                             </Border>
-                            <TextBlock x:Name="JobDetailsLabel" Grid.Row="2" Text="Select an item to see its details or show it in File Explorer. To undo compression, use Storage insights." Style="{StaticResource Muted}" FontSize="13" Margin="0,8,0,0" TextTrimming="CharacterEllipsis" />
+                            <TextBlock x:Name="JobDetailsLabel" Grid.Row="2" Text="Select an item to see its details or show it in File Explorer. To get original sizes back, use Restore original size in Managed folders." Style="{StaticResource Muted}" FontSize="13" Margin="0,8,0,0" TextTrimming="CharacterEllipsis" />
                             <TextBox Grid.Row="3" x:Name="JobDetails" IsReadOnly="True" Height="92" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Visibility="Collapsed"
                                      AutomationProperties.Name="Copyable job diagnostics" />
                         </Grid>
