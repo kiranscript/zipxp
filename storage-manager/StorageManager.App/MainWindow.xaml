@@ -159,7 +159,7 @@
                                         <Border Grid.Column="0" Style="{StaticResource Card}">
                                             <StackPanel>
                                                 <StackPanel Orientation="Horizontal">
-                                                    <Border x:Name="EstimateBadge" Style="{StaticResource IconBadge}"><TextBlock x:Name="EstimateGlyph" Text="&#xEA80;" Style="{StaticResource Glyph}" HorizontalAlignment="Center" /></Border>
+                                                    <Border x:Name="EstimateBadge" Style="{StaticResource IconBadge}"><TextBlock x:Name="EstimateGlyph" Text="&#xE73F;" Style="{StaticResource BadgeGlyph}" HorizontalAlignment="Center" /></Border>
                                                     <TextBlock Text="Could still save" Style="{StaticResource StatLabel}" />
                                                 </StackPanel>
                                                 <TextBlock x:Name="EstimateCard" Text="—" Style="{StaticResource StatValue}" />
@@ -171,7 +171,7 @@
                                         <Border Grid.Column="2" Style="{StaticResource Card}">
                                             <StackPanel>
                                                 <StackPanel Orientation="Horizontal">
-                                                    <Border Style="{StaticResource IconBadge}"><TextBlock Text="&#xEDA2;" Style="{StaticResource Glyph}" HorizontalAlignment="Center" /></Border>
+                                                    <Border Style="{StaticResource IconBadge}"><TextBlock Text="&#xEDA2;" Style="{StaticResource BadgeGlyph}" HorizontalAlignment="Center" /></Border>
                                                     <TextBlock Text="Drive space" Style="{StaticResource StatLabel}" ToolTip="Free space on the whole drive, not just your ZipXP folders." />
                                                 </StackPanel>
                                                 <TextBlock x:Name="VolumesEmpty" Text="Add a folder to see how full its drive is." Style="{StaticResource Muted}" />
@@ -205,7 +205,7 @@
                                         <Border Grid.Column="4" Style="{StaticResource Card}">
                                             <StackPanel>
                                                 <StackPanel Orientation="Horizontal">
-                                                    <Border Style="{StaticResource IconBadge}"><TextBlock Text="&#xE81C;" Style="{StaticResource Glyph}" HorizontalAlignment="Center" /></Border>
+                                                    <Border Style="{StaticResource IconBadge}"><TextBlock Text="&#xE81C;" Style="{StaticResource BadgeGlyph}" HorizontalAlignment="Center" /></Border>
                                                     <TextBlock Text="Right now" Style="{StaticResource StatLabel}" />
                                                 </StackPanel>
                                                 <TextBlock x:Name="ActivityCard" Text="Nothing waiting" Style="{StaticResource StatValue}" />

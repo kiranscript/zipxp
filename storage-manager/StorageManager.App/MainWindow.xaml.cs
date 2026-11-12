@@ -164,7 +164,6 @@ public partial class MainWindow : Window
             var allDone = known.Length > 0 && estimate == 0;
             EstimateCard.Text = known.Length == 0 ? "—" : allDone ? "All compressed" : Display.Bytes(estimate);
             EstimateCaption.Text = allDone ? $"{Plain.Count(known.Sum(r => r.Scan!.Files), "file")} checked. Nothing more is worth compressing right now." : known.Length == 0 ? "Available after the first scan." : "A rough estimate. Actual savings may differ.";
-            EstimateGlyph.Text = allDone ? "\uE73E" : "\uEA80";
 
 
             OverviewCompressButton.Visibility = known.Length > 0 && estimate > 0 ? Visibility.Visible : Visibility.Collapsed;

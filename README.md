@@ -83,6 +83,17 @@ For an isolated instance, pass a Windows path:
 ./storage-manager/run-wsl.sh --data-dir 'C:\Temp\ZipXP-isolated'
 ```
 
+Starting clean: the app keeps its folders, settings and history in `%LOCALAPPDATA%\ZipXP\StorageManager`, so a rebuild still shows old data. Launcher options (others are passed to the app):
+
+```bash
+./storage-manager/run-wsl.sh --fresh     # empty throwaway data; your real data is untouched
+./storage-manager/run-wsl.sh --rebuild   # delete bin/ and obj/ first, so nothing stale is reused
+./storage-manager/run-wsl.sh --reset     # erase your real saved data (asks for confirmation), then start empty
+./storage-manager/run-wsl.sh --rebuild --fresh
+```
+
+Erasing data does not undo compression; files already compressed stay compressed.
+
 Press Ctrl+C in the terminal to stop a dev run: the launcher asks the app to quit cleanly (stopping the worker and removing the tray icon), and force-ends it after about 10 seconds if it doesn't.
 
 Only one worker runs for a user/data directory. A second launch activates the existing window. The policy database must not be placed inside a managed root. Startup registration is off unless explicitly enabled. Native compression persists independently of app state.
