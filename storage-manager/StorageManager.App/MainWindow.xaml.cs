@@ -156,7 +156,7 @@ public partial class MainWindow : Window
             var percent = any && shrunk > 0 ? Math.Round(100.0 * shrunk / snapshot.Original) : 0;
             SavedHeadline.SetResourceReference(TextBlock.ForegroundProperty, shrunk > 0 ? "SystemFillColorSuccessBrush" : "TextFillColorPrimaryBrush");
             SavedHeadline.Text = known.Length == 0 ? "—" : shrunk > 0 ? $"{Display.Bytes(shrunk)} saved" : "Nothing saved yet";
-            SavedPercent.Text = known.Length == 0 ? "Waiting for the first scan" : shrunk > 0 ? $"Your files take up {percent:0}% less room than they did" : "Compression hasn't started. Turn it on in Folder settings, or choose Compress now.";
+            SavedPercent.Text = known.Length == 0 ? "Waiting for the first scan" : shrunk > 0 ? $"Your files take up {percent:0}% less room than they did" : "Compression hasn't started. Turn it on in Settings, or choose Compress now.";
             AllocatedCard.Text = known.Length == 0 ? "Using now: —" : $"Using now: {Display.Bytes(snapshot.Allocation)}";
             SavedLegend.Text = known.Length == 0 ? "Saved: —" : $"Saved: {(shrunk > 0 ? Display.Bytes(shrunk) : "nothing yet")}";
             OriginalCard.Text = known.Length == 0 ? "Original size: —" : $"Original size: {Display.Bytes(snapshot.Original)}";
@@ -164,7 +164,6 @@ public partial class MainWindow : Window
             var allDone = known.Length > 0 && estimate == 0;
             EstimateCard.Text = known.Length == 0 ? "—" : allDone ? "All compressed" : Display.Bytes(estimate);
             EstimateCaption.Text = allDone ? $"{Plain.Count(known.Sum(r => r.Scan!.Files), "file")} checked. Nothing more is worth compressing right now." : known.Length == 0 ? "Available after the first scan." : "A rough estimate. Actual savings may differ.";
-            EstimateGlyph.Text = allDone ? "\uE73E" : "\uEA80";
 
 
             OverviewCompressButton.Visibility = known.Length > 0 && estimate > 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -196,9 +195,8 @@ public partial class MainWindow : Window
             FolderPauseItem.Header = Selected?.Policy.Paused == true ? "Resume this folder" : "Pause this folder";
             EmptyFolders.Visibility = snapshot.Roots.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             FoldersGrid.Visibility = snapshot.Roots.Count == 0 ? Visibility.Hidden : Visibility.Visible;
-            // Everything except "Add folder" acts on the selected folder.
-            // With no folders yet, the only sensible action is "Add folder", so the rest are hidden rather than greyed out.
-            foreach (var action in FolderActions.Children.OfType<UIElement>().Skip(1))
+            // This toolbar contains selection actions; Add folder lives in the page header.
+            foreach (var action in FolderActions.Children.OfType<UIElement>())
             {
                 action.IsEnabled = Selected != null;
                 action.Visibility = snapshot.Roots.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
@@ -213,7 +211,7 @@ public partial class MainWindow : Window
                 : "Nothing in the selected folder is compressed right now, so it already takes its original space.";
             var selectedDone = selectedRow?.Scan is { Candidates: 0 };
             FoldersNote.Text = selectedDone ? "Everything worth compressing in this folder is already compressed."
-                : "New folders are only scanned. Turn on Auto-compress in Folder settings, or choose Compress now. You can restore the original size at any time.";
+                : "New folders are only scanned. Turn on Auto-compress in Settings, or choose Compress now. You can restore the original size at any time.";
             FoldersNote.Visibility = snapshot.Roots.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
             hasFolders = snapshot.Roots.Count > 0; ShowPage(Math.Max(0, Pages.SelectedIndex));
             WelcomeCard.Visibility = hasFolders ? Visibility.Collapsed : Visibility.Visible;
@@ -309,7 +307,7 @@ public partial class MainWindow : Window
         } ?? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
         if (!System.IO.Directory.Exists(special)) throw new InvalidOperationException("That folder doesn't exist on this PC. Use Add folder to pick another one.");
         var root = await Engine.AddAsync(special); selectNext = root.Id;
-        Notify("Folder added. ZipXP is scanning it now and hasn't changed anything. To start saving space, open Folder settings and turn on automatic compression.");
+        Notify("Folder added. ZipXP is scanning it now and hasn't changed anything. To start saving space, open Settings and turn on automatic compression.");
     });
     private void ShowInFolder_Click(object sender, RoutedEventArgs e)
     {
@@ -336,7 +334,7 @@ public partial class MainWindow : Window
         var dialog = new OpenFolderDialog { Title = "Choose a folder on this PC for ZipXP to look after" };
         if (dialog.ShowDialog(this) != true) return;
         var root = await Engine.AddAsync(dialog.FolderName); selectNext = root.Id;
-        Notify("Folder added. ZipXP is scanning it now and hasn't changed anything. To start saving space, open Folder settings and turn on automatic compression.");
+        Notify("Folder added. ZipXP is scanning it now and hasn't changed anything. To start saving space, open Settings and turn on automatic compression.");
     });
     private void Analyze_Click(object sender, RoutedEventArgs e)
     {
@@ -444,7 +442,7 @@ public partial class MainWindow : Window
         var text = $"{Plain.Count(files, "file")} worth compressing in {Plain.Count(targets.Count, "folder")} · {Display.Bytes(bytes)} in total\n"
             + $"Needs at least {Display.Bytes(headroom)} of free space on the drive while it works.\n"
             + (complete ? "Everything in those folders was checked.\n" : "Items that couldn't be read are left out.\n")
-            + "\nThey will be compressed once, in the background, and you can undo it later from Managed folders > Restore original size. This does not turn on automatic compression.\n\nGo ahead?";
+            + "\nThey will be compressed once, in the background, and you can undo it later from Managed folders > Restore. This does not turn on automatic compression.\n\nGo ahead?";
         if (MessageBox.Show(this, text, "Compress preview", MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes) { BannerHost.Visibility = Visibility.Collapsed; return; }
         var queued = 0;
         foreach (var root in targets) queued += await Engine.QueueScopeAsync(root.Id, "Compress");
@@ -513,7 +511,7 @@ public partial class MainWindow : Window
         }
         InsightsFooter.Text = largest ? "Showing the biggest files anywhere inside this folder. Choose By folder to browse folder by folder."
             : shown.Any(r => r.Source.File?.Directory == true) ? "Double-click a folder to open it, or use the path above to jump back. The biggest items are listed first."
-            : "Select compressed files, then choose Undo for selected to put them back to normal.";
+            : "Select compressed files, then choose Restore selected to restore their original size.";
         BuildCrumbs();
     }
     private static IReadOnlyDictionary<string, (long Logical, long Allocated, int Unknown)> BuildFolderTotals(IReadOnlyList<Observation> entries, string? root)
