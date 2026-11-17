@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <!-- Kept as ZipXP.StorageManager so existing installs, the sign-in entry and the single-instance name keep working. -->
+    <AssemblyName>ZipXP.StorageManager</AssemblyName>
+    <ApplicationIcon>Assets\zipxp.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup><Resource Include="Assets\zipxp.ico" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../ZipXP.Core/ZipXP.Core.csproj" /></ItemGroup>
+</Project>

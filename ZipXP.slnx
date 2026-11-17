@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ZipXP.App/ZipXP.App.csproj" />
+    <Project Path="src/ZipXP.Core/ZipXP.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ZipXP.Checks/ZipXP.Checks.csproj" />
+    <Project Path="tests/ZipXP.FolderTest/ZipXP.FolderTest.csproj" />
+  </Folder>
+</Solution>
