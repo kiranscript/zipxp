@@ -4,6 +4,9 @@ All notable changes to ZipXP are recorded here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+### Known issues
+- After decompression, the measured allocation can be read before the file handle is closed, which overstates growth for some non-aligned file sizes and can show a small negative savings total. Details in [docs/validation.md](docs/validation.md).
+
 ### Changed
 - Repository reorganised into `src/`, `tests/`, `scripts/` and `docs/`; projects renamed from `StorageManager.*` to `ZipXP.*`.
 - The window, tray icon and sidebar now say "ZipXP" instead of "ZipXP Storage Manager".
@@ -13,13 +16,13 @@ All notable changes to ZipXP are recorded here. The format follows [Keep a Chang
 ### Unchanged on purpose
 - Data folder, startup entry, single-instance name, executable name and install folder keep their `StorageManager` identifiers so existing installs and saved policies continue to work.
 
-## [0.2.0]
+## [0.2.0] (pre-release)
 
 ### Added
 - Selective, policy-driven NTFS compression of managed folders: read-only analysis first, then optional automatic compression of existing, new, copied-in and changed files.
 - Persistent single-file-at-a-time queue with retry/backoff, quiet periods, cooldowns, schedules, battery, CPU and free-space gates, and crash recovery.
 - System-tray worker, optional start at sign-in, and **Restore original size** decompression.
-- Overview, managed folders, storage insights and searchable activity views with a signed allocation ledger.
+- Overview, managed folders, storage insights and searchable activity views with a signed (+/-) allocation ledger.
 - Self-contained publish package plus per-user install and uninstall scripts.
 
 ### Removed

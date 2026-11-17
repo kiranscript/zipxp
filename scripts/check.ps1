@@ -25,7 +25,7 @@ try {
         if ($app.HasExited -or $app.MainWindowHandle -ne 0) { break }
         Start-Sleep -Milliseconds 100
     } while ([DateTime]::UtcNow -lt $deadline)
-    if ($app.HasExited -or $app.MainWindowHandle -eq 0 -or $app.MainWindowTitle -notlike 'ZipXP*') { throw 'Storage Manager window was not found.' }
+    if ($app.HasExited -or $app.MainWindowHandle -eq 0 -or $app.MainWindowTitle -notlike 'ZipXP*') { throw 'ZipXP window was not found.' }
     Write-Host "PASS: actual WPF dashboard launched: $($app.MainWindowTitle)"
     Add-Type -AssemblyName UIAutomationClient
     Add-Type -AssemblyName UIAutomationTypes

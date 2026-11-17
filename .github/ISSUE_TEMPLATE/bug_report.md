@@ -11,7 +11,7 @@ labels: bug
 **Steps to reproduce**
 
 **Environment**
-- ZipXP version (see the app or `BUILD.txt`):
+- ZipXP version or git commit:
 - Windows version:
 - Drive/NTFS details if relevant (cluster size, SSD/HDD):
 

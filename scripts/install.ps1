@@ -10,7 +10,7 @@ $ErrorActionPreference = 'Stop'
 if (-not (Test-Path -LiteralPath (Join-Path $Source 'ZipXP.StorageManager.exe'))) { throw 'Extract the published package and run its install.ps1, or supply -Source with the published app directory.' }
 $Destination = [IO.Path]::GetFullPath($Destination)
 if (Get-Process -Name 'ZipXP.StorageManager' -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith($Destination + '\', [StringComparison]::OrdinalIgnoreCase) }) {
-    throw 'Exit Storage Manager using its tray menu before installing or updating. No process will be force-killed.'
+    throw 'Quit ZipXP from its tray menu before installing or updating. No process will be force-killed.'
 }
 New-Item -ItemType Directory -Force -Path $Destination | Out-Null
 Copy-Item -Path (Join-Path $Source '*') -Destination $Destination -Recurse -Force

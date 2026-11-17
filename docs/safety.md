@@ -18,9 +18,12 @@ ZipXP asks Windows to compress your files in place. It does not delete, move or 
 
 Normal state: `%LOCALAPPDATA%\ZipXP\StorageManager\storage.sqlite3` plus SQLite WAL/SHM files. The main UI and tray share one process; SQLite is supplied by Windows' `winsqlite3.dll`. There are no external NuGet or UI packages.
 
-
 Only one worker runs for a user/data directory. A second launch activates the existing window. The policy database must not be placed inside a managed root. Startup registration is off unless explicitly enabled. Native compression persists independently of app state.
 
 After a crash, previously running jobs become retry records and actual state/identity is rechecked. A file already compressed by an interrupted operation is recorded as unchanged without inventing a savings measurement. Files changed while offline are found on startup. There is no rollback claim.
 
 To back up the policy/history database, exit the tray worker normally and copy the state directory. Keep a backup before replacing a release with an older version; newer schema versions are rejected. Removing the database removes policies/history, not file contents or their native compression state.
+
+## Known issues
+
+After decompression, allocation can be measured before the file handle is closed, which overstates growth for some file sizes and can show a small negative savings total. Files themselves are unaffected. See [validation](validation.md).

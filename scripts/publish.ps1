@@ -10,7 +10,8 @@ $root = Split-Path -Parent $PSScriptRoot
 if (-not $Output) { $Output = Join-Path $root 'artifacts/win-x64' }
 $Output = [IO.Path]::GetFullPath($Output)
 $appFolder = Join-Path $Output 'app'
-$version = ([xml](Get-Content -Raw -LiteralPath (Join-Path $root 'Directory.Build.props'))).Project.PropertyGroup.Version
+$version = (& $Dotnet msbuild (Join-Path $root 'src/ZipXP.App/ZipXP.App.csproj') -getProperty:Version --nologo | Out-String).Trim()
+if (-not $version) { throw 'Could not read the version from Directory.Build.props.' }
 & $Dotnet publish (Join-Path $root 'src/ZipXP.App/ZipXP.App.csproj') -c Release -r win-x64 --self-contained true -o $appFolder --nologo
 if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
 $signature = 'Unsigned development build'

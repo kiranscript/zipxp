@@ -25,7 +25,7 @@ That run found an **open allocation-accounting defect (known issue)** not covere
 ## Release acceptance still required
 
 - Broad Windows/NTFS cluster-size, hardware, permissions, antivirus, and backup/restore compatibility matrix.
-- Repeated workload CPU/I/O/open/save latency measurements and the plan's pilot savings/performance targets.
+- Repeated workload CPU/I/O/open/save latency measurements and pilot savings/performance targets.
 - Actual Windows sign-out/restart/sign-in validation of optional startup registration and window-to-tray behavior during long operations.
 - A release certificate, trusted timestamping, and validation of a signed production package. No certificate is supplied in this workspace.
 - Real user pilot, accessibility review, and installation/update recovery on additional machines.

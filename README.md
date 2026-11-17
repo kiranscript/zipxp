@@ -24,7 +24,7 @@
 - **Your files stay put.** No archives, no new formats, no changed paths. Apps open compressed files as normal.
 - **It looks before it acts.** Adding a folder only analyses it and shows how much space might be saved. Nothing changes until you turn compression on.
 - **It works quietly.** A small tray app compresses files in the background, one at a time, at low priority. It waits while you are on battery, the CPU is busy or the disk is nearly full.
-- **You can always undo it.** **Restore original size** gives every file its full space back. Nothing is deleted.
+- **It is reversible.** **Restore original size** decompresses the files ZipXP manages so they use their full space again. Nothing is deleted. Some files are never touched; see [Safety](docs/safety.md).
 - **It stays on your PC.** No account, no cloud, no telemetry upload.
 
 ## Get started
@@ -37,9 +37,9 @@ cd zipxp
 dotnet run --project src/ZipXP.App/ZipXP.App.csproj
 ```
 
-Then choose **Managed folders → Add folder…**, pick a folder such as Documents or a project folder, and read the estimate. To build a package you can install, see [Install and uninstall](docs/install.md).
+Then choose **Managed folders → Add folder…**, pick a test folder that holds copies of some documents, and read the estimate. To build a package you can install, see [Install and uninstall](docs/install.md).
 
-Compression savings depend entirely on what is in the folder. Text, source code, documents and logs shrink well; photos, video and archives are already compressed and barely change. ZipXP measures the real result per file and skips files that don't benefit.
+Compression savings depend entirely on what is in the folder. One known accounting issue (see [validation](docs/validation.md)) can overstate how much space is freed after restoring some files. Text, source code, documents and logs shrink well; photos, video and archives are already compressed and barely change. ZipXP measures the real result per file and skips files that don't benefit.
 
 ## Documentation
 

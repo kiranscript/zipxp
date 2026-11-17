@@ -7,7 +7,7 @@ if (-not (Test-Path -LiteralPath $marker)) { throw 'This directory has no ZipXP 
 $installation = Get-Content -Raw -LiteralPath $marker | ConvertFrom-Json
 if ($installation.product -ne 'ZipXP.StorageManager' -or -not $Destination.Equals($installation.installPath, [StringComparison]::OrdinalIgnoreCase) -or $Destination -eq [IO.Path]::GetPathRoot($Destination)) { throw 'Installation record does not match the directory.' }
 if (Get-Process -Name 'ZipXP.StorageManager' -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith($Destination + '\', [StringComparison]::OrdinalIgnoreCase) }) {
-    throw 'Exit Storage Manager through its tray menu first; the current operation must be allowed to finish.'
+    throw 'Quit ZipXP from its tray menu first; the current operation must be allowed to finish.'
 }
 $run = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
 $registration = Get-ItemProperty -Path $run -ErrorAction SilentlyContinue

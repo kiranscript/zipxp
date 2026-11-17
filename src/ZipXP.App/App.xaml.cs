@@ -44,7 +44,7 @@ public partial class App : Application
             CreateTray();
             Engine.Start();
             if (!e.Args.Contains("--tray")) ShowMain();
-            // Dev launcher (run-wsl.sh) creates this file on Ctrl+C to ask for a clean shutdown.
+            // Dev launcher (scripts/dev.sh) creates this file on Ctrl+C to ask for a clean shutdown.
             var quitIndex = Array.IndexOf(e.Args, "--quit-file");
             if (quitIndex >= 0 && quitIndex + 1 < e.Args.Length)
             {
