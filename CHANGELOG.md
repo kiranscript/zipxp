@@ -4,6 +4,11 @@ All notable changes to ZipXP are recorded here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+### Added
+- One-line curl installer (`scripts/get.ps1`, served at `/install.ps1` on the website): downloads the release ZIP, verifies its SHA-256 and runs the per-user `install.ps1`.
+- Release ZIPs get a GitHub build attestation; `get.ps1` verifies it when `gh` is installed and signed in (`-RequireAttestation` makes it mandatory).
+- Release workflow: pushing a `v*` tag builds, checks and packages the app and attaches `ZipXP-win-x64.zip` and its `.sha256` to a GitHub release.
+
 ### Known issues
 - After decompression, the measured allocation can be read before the file handle is closed, which overstates growth for some non-aligned file sizes and can show a small negative savings total. Tracked in [#2](https://github.com/kiranscript/zipxp/issues/2); details in [docs/validation.md](docs/validation.md).
 
