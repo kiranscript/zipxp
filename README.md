@@ -34,13 +34,15 @@
 
 ## Get started
 
-ZipXP needs Windows 11 and a local NTFS drive. There is no installer download yet, so for now build it from source with the [.NET 10 SDK](https://dotnet.microsoft.com/download):
+ZipXP needs Windows 11 and a local NTFS drive. There is no installer download yet, so for now build it from source with the [.NET 10 SDK](https://dotnet.microsoft.com/download) and Node.js 22.12+ installed. The React desktop interface also requires the [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/):
 
 ```powershell
 git clone https://github.com/kiranscript/zipxp.git
 cd zipxp
 dotnet run --project src/ZipXP.App/ZipXP.App.csproj
 ```
+
+If WebView2 is unavailable, pass `-- --native-ui` to the run command for the original WPF interface.
 
 Then choose **Managed folders → Add folder…**, pick a test folder that holds copies of some documents, and read the estimate. To build a package you can install, see [Install and uninstall](docs/install.md).
 
@@ -67,7 +69,8 @@ Compression savings depend entirely on what is in the folder. One known accounti
 
 ```text
 src/ZipXP.Core/   compression engine, queue, SQLite store
-src/ZipXP.App/    WPF dashboard and tray app
+src/ZipXP.App/    WebView2 desktop host, WPF fallback and tray app
+src/ZipXP.UI/     React + TypeScript interface (Vite)
 tests/            real-filesystem checks
 scripts/          dev launcher, check, publish, install
 docs/             documentation

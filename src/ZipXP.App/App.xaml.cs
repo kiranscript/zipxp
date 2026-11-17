@@ -40,7 +40,7 @@ public partial class App : Application
             store = new Store(Path.Combine(data, "storage.sqlite3"));
             Engine = new(store);
             try { Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.BelowNormal; } catch (System.ComponentModel.Win32Exception) { }
-            MainWindow = new MainWindow();
+            MainWindow = e.Args.Contains("--native-ui") ? new MainWindow() : new ReactWindow();
             CreateTray();
             Engine.Start();
             if (!e.Args.Contains("--tray")) ShowMain();
@@ -59,7 +59,7 @@ public partial class App : Application
             }
             if (e.Args.Contains("--launch-check"))
             {
-                var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(12) };
+                var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(40) };
                 timer.Tick += async (_, _) => { timer.Stop(); await ExitAsync(); };
                 timer.Start();
             }
@@ -111,6 +111,7 @@ public partial class App : Application
         if (Exiting) return;
         Exiting = true;
         if (MainWindow is MainWindow window) window.ShowClosingStatus();
+        if (MainWindow is ReactWindow reactWindow) reactWindow.ShowClosingStatus();
         if (Engine != null) await Engine.DisposeAsync();
         tray?.Dispose(); tray = null;
         Shutdown();
