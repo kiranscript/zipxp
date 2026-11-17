@@ -969,7 +969,7 @@ test("storage status preserves compression state alongside the eligibility reaso
         .locator(".insights-table tbody tr")
         .filter({ hasText: "application.log" });
     await expect(compressed.locator("td.notes")).toHaveText(
-        "Compressed · Below the size limit for new compression",
+        "Compressed · Below the minimum file size for new compression",
     );
     await expect(compressed.getByRole("checkbox")).toBeEnabled();
     const uncompressed = page
@@ -1042,5 +1042,54 @@ test("search focus surrounds its complete control and high contrast keeps logo a
                 }),
             ).toBe(true);
         }
+    }
+});
+
+test("high-contrast navigation keeps selection and keyboard focus distinct on every page", async ({
+    page,
+}) => {
+    await page.emulateMedia({ forcedColors: "active" });
+    await openApp(page);
+    await expect(
+        page.getByRole("button", {
+            name: "Compress all eligible",
+            exact: true,
+        }),
+    ).toBeVisible();
+    await page.keyboard.press("Tab");
+    await expect(
+        page.getByRole("link", { name: "Skip to content" }),
+    ).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(
+        page.getByRole("button", { name: "ZipXP Local storage manager" }),
+    ).toBeFocused();
+    for (const name of [
+        "Overview",
+        "Managed folders",
+        "Storage insights",
+        "Activity",
+    ]) {
+        await page.keyboard.press("Tab");
+        const selected = nav(page, name);
+        await expect(selected).toBeFocused();
+        await page.keyboard.press("Enter");
+        await expect(selected).toHaveAttribute("aria-current", "page");
+        await expect(selected).toHaveCSS("outline-width", "3px");
+        await expect(selected).toHaveCSS("outline-offset", "3px");
+        await expect(selected).toHaveCSS("border-width", "2px");
+        const inactive = page.locator(".nav-item:not([aria-current])").first();
+        expect(
+            await selected.evaluate((el) => getComputedStyle(el).borderColor),
+        ).not.toBe(
+            await inactive.evaluate((el) => getComputedStyle(el).borderColor),
+        );
+        if (name === "Storage insights")
+            await expect(
+                page.getByRole("button", { name: "Client projects" }),
+            ).toBeVisible();
+        await page.screenshot({
+            path: `${artifacts}/high-contrast-nav-focus-${name.toLowerCase().replaceAll(" ", "-")}.png`,
+        });
     }
 });

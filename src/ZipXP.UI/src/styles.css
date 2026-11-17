@@ -1645,7 +1645,18 @@ select[aria-invalid="true"] {
         background: Highlight;
         forced-color-adjust: none;
     }
-    .nav-item.active,
+    .nav-item,
+    .nav-item:hover,
+    .nav-item.active {
+        border: 2px solid Canvas;
+        padding: 10px 12px;
+        background: Canvas;
+        color: CanvasText;
+        forced-color-adjust: none;
+    }
+    .nav-item.active {
+        border-color: Highlight;
+    }
     .folder-row.selected {
         outline: 2px solid Highlight;
         outline-offset: -2px;

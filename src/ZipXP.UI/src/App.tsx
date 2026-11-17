@@ -130,7 +130,7 @@ function storageStatus(row: Insight): string {
           : "Not compressed";
     const note =
         row.compressed && row.notes === "Too small to be worth compressing"
-            ? "Below the size limit for new compression"
+            ? "Below the minimum file size for new compression"
             : row.notes;
     return note && !(row.compressed && note === "Already compressed")
         ? `${state} · ${note}`
