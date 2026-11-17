@@ -1,5 +1,28 @@
 # Install and uninstall
 
+## Install with curl
+
+From Windows PowerShell (Windows 11 ships `curl.exe`):
+
+```powershell
+curl.exe -fsSL https://kiranscript.github.io/zipxp/install.ps1 -o "$env:TEMP\zipxp-get.ps1"; powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\zipxp-get.ps1"
+```
+
+The script downloads the latest release ZIP from GitHub, checks it against the release's SHA-256 file, extracts it to a temporary folder, runs the package's own `install.ps1`, and deletes the temporary files. It needs no administrator rights and installs per user, exactly as described below. If ZipXP is running, quit it from the tray first; nothing is force-killed.
+
+Options go after `-File`, and are passed to `install.ps1`:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\zipxp-get.ps1" -StartAtLogin -Launch
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\zipxp-get.ps1" -Version 0.2.0
+```
+
+`-Version` pins a release, `-Destination` and `-NoShortcut` are passed through, and the `ZIPXP_VERSION` environment variable works like `-Version`. Read the script before running it: [scripts/get.ps1](../scripts/get.ps1).
+
+The checksum is published next to the ZIP, so on its own it catches a damaged or truncated download, not a tampered release. Each release ZIP also has a GitHub build attestation proving it was built by this repository's release workflow from the tagged commit. If the [GitHub CLI](https://cli.github.com/) is installed and signed in (`gh auth login`), the script verifies it automatically and aborts on failure; add `-RequireAttestation` to refuse to install when it can't check. You can verify by hand with `gh attestation verify ZipXP-win-x64.zip --repo kiranscript/zipxp`.
+
+The build is not Authenticode-signed. Files fetched by `curl.exe` aren't tagged as downloaded from the internet, so Windows usually won't show a SmartScreen prompt on this path, but that also means SmartScreen isn't checking it. Defender still scans the files. A ZIP downloaded in a browser will show the unsigned-publisher warning. Releases are created from `v*` tags by the release workflow; until the first release exists, build from source (below).
+
 ## Publish a package
 
 ```powershell

@@ -84,7 +84,10 @@
 
     <section id="quickstart">
       <h2>Quickstart</h2>
-      <p>ZipXP needs Windows 11 and a local NTFS drive. There's no installer download yet, so build it from source with the <a href="https://dotnet.microsoft.com/download">.NET 10 SDK</a>:</p>
+      <p>ZipXP needs Windows 11 and a local NTFS drive. Install the latest release for your user from Windows PowerShell. It needs no administrator rights:</p>
+<pre><span class="p">PS&gt; </span>curl.exe -fsSL https://kiranscript.github.io/zipxp/install.ps1 -o "$env:TEMP\zipxp-get.ps1"
+<span class="p">PS&gt; </span>powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\zipxp-get.ps1"</pre>
+      <p>The script downloads the release ZIP, verifies its SHA-256, runs the per-user installer and cleans up. Add <code>-StartAtLogin</code>, <code>-Launch</code> or <code>-Version 0.2.0</code> after <code>-File …</code> if you want them. The checksum catches a damaged download. The release also carries a GitHub build attestation, which the script verifies if the GitHub CLI is installed and signed in (<code>-RequireAttestation</code> makes that mandatory). The build is not code-signed. Until the first release is published, or if you'd rather build it yourself, use the <a href="https://dotnet.microsoft.com/download">.NET 10 SDK</a>:</p>
 <pre><span class="p">PS&gt; </span>git clone https://github.com/kiranscript/zipxp.git
 <span class="p">PS&gt; </span>cd zipxp
 <span class="p">PS&gt; </span>dotnet run --project src/ZipXP.App/ZipXP.App.csproj</pre>

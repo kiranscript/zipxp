@@ -432,13 +432,20 @@
     </div>
     <div class="term reveal" style="--d:.1s" data-tabs>
       <div class="term__tabs" role="tablist" aria-label="Commands">
-        <button role="tab" aria-selected="true" aria-controls="t-quick" id="tab-quick">Quickstart</button>
+        <button role="tab" aria-selected="true" aria-controls="t-curl" id="tab-curl">Install</button>
+        <button role="tab" aria-selected="false" aria-controls="t-quick" id="tab-quick" tabindex="-1">Build</button>
         <button role="tab" aria-selected="false" aria-controls="t-wsl" id="tab-wsl" tabindex="-1">WSL</button>
         <button role="tab" aria-selected="false" aria-controls="t-pub" id="tab-pub" tabindex="-1">Publish &amp; install</button>
       </div>
       <div class="term__body">
         <button class="copy" data-copy type="button">Copy</button>
-<pre role="tabpanel" id="t-quick" aria-labelledby="tab-quick"><span class="c"># Clone and run (Windows, .NET 10 SDK)</span>
+<pre role="tabpanel" id="t-curl" aria-labelledby="tab-curl"><span class="c"># Install the latest release for this user (no admin)</span>
+<span class="p">PS&gt; </span><span class="line"><span class="k">curl.exe</span> -fsSL https://kiranscript.github.io/zipxp/install.ps1 -o <span class="s">"$env:TEMP\zipxp-get.ps1"</span></span>
+<span class="p">PS&gt; </span><span class="line">powershell -NoProfile -ExecutionPolicy Bypass -File <span class="s">"$env:TEMP\zipxp-get.ps1"</span></span>
+
+<span class="c"># Optional: start at sign-in and launch now</span>
+<span class="p">PS&gt; </span><span class="line">powershell -NoProfile -ExecutionPolicy Bypass -File <span class="s">"$env:TEMP\zipxp-get.ps1"</span> -StartAtLogin -Launch</span></pre>
+<pre role="tabpanel" id="t-quick" aria-labelledby="tab-quick" hidden><span class="c"># Clone and run (Windows, .NET 10 SDK)</span>
 <span class="p">PS&gt; </span><span class="line">git clone https://github.com/kiranscript/zipxp.git</span>
 <span class="p">PS&gt; </span><span class="line">cd zipxp</span>
 <span class="p">PS&gt; </span><span class="line"><span class="k">dotnet</span> run --project src/ZipXP.App/ZipXP.App.csproj</span>
@@ -527,7 +534,7 @@
       </details>
       <details>
         <summary>Is there an installer to download?</summary>
-        <div class="ans"><p>Not yet. For now, build it from source with the .NET 10 SDK (see the <a href="docs.html#quickstart">quickstart</a>). You can also run <code>scripts\publish.ps1</code> to make a self-contained ZIP that installs per user.</p></div>
+        <div class="ans"><p>Yes, once a release is published: a one-line <code>curl.exe</code> command downloads the ZIP, verifies its SHA-256 and installs per user (see the <a href="docs.html#quickstart">quickstart</a>). Release ZIPs carry a GitHub build attestation, and the script checks it when the GitHub CLI is installed. The build is not code-signed. You can also build it from source with the .NET 10 SDK, or run <code>scripts\publish.ps1</code> to make the same self-contained ZIP yourself.</p></div>
       </details>
       <details>
         <summary>Where is my data stored?</summary>
