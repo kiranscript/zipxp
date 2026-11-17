@@ -131,6 +131,10 @@ Extract the ZIP and run its `install.ps1`. It installs for the current user unde
 
 Run the installed `uninstall.ps1` after exiting the tray worker. It verifies its installation record, removes the app's files, matching startup registration and shortcut, and leaves managed files and the local policy/history database intact. Reinstalling can reuse those retained policies. Test data is not deleted automatically.
 
+## Website
+
+A static marketing and docs site lives in [`website/`](website/), with plain HTML, CSS and JS and no build step. Open `website/index.html` directly, or serve it with `python3 -m http.server -d website`. The `Deploy website` workflow publishes it to GitHub Pages on pushes to `main`. Set Pages' source to **GitHub Actions** in the repository settings once.
+
 ## Source layout
 
 ```text
