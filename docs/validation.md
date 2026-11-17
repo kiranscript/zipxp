@@ -12,15 +12,15 @@ Development host: Windows display version 26H2, build 26300.9711; .NET SDK 10.0.
 - Isolated per-user installation, installed self-contained dashboard launch, graceful exit, and uninstall preserving the policy/history database: passed. No test created a shortcut or startup registration.
 - Static shell syntax, source whitespace, and local documentation links: passed.
 
-The final core fixture run was retained at `C:\Users\kiran\AppData\Local\Temp\ZipXP-Manager-checks-082943c57d3341af9af25c26fa92066d`. The successful package lifecycle state was retained at `C:\Users\kiran\AppData\Local\Temp\ZipXP-package-check-6aee2ef8f445402da8ece8c04a655598`. The development package is `C:\Temp\ZipXP-StorageManager-package.zip`. These paths are local test evidence, not required application paths.
+Fixture and package-lifecycle folders from these runs were retained locally as test evidence; they are not required application paths.
 
 Runtime testing found and fixed a launch-check assumption about console-host `WaitForInputIdle`, missing-startup-entry handling in PowerShell uninstall, and an operation-cache edge case that could block explicit decompression. The final executed checks have no unresolved failures.
 
 ## Additional real-folder run: accounting defect found
 
-A subsequent manual 35-file test (2026-11-09; its evidence files have since been removed from the repository) exercised the actual app on `C:\Users\kiran\zipxp-test`, including the default quiet period, closed-window background work, restart catch-up, and GUI decompression. All original hashes and recorded file metadata were preserved and restored.
+A subsequent manual 35-file test (2026-11-09; its evidence files have since been removed from the repository) exercised the actual app on a local test folder, including the default quiet period, closed-window background work, restart catch-up, and GUI decompression. All original hashes and recorded file metadata were preserved and restored.
 
-That run found an **open allocation-accounting defect** not covered by the earlier aligned-size fixtures: reading post-decompression allocation before closing the mutation handle overstates growth for some non-aligned lengths. Three files produced an erroneous **−84 KiB** round-trip ledger total although final allocation exactly matched the baseline. A separate 65,537-byte reproduction confirmed 131,072 allocated bytes while the mutation handle remained open versus 69,632 after close. Application code remains unchanged by this reporting task. See the report for affected files, raw evidence, and the recommended measurement correction.
+That run found an **open allocation-accounting defect (known issue)** not covered by the earlier aligned-size fixtures: reading post-decompression allocation before closing the mutation handle overstates growth for some non-aligned lengths. Three files produced an erroneous **−84 KiB** round-trip ledger total although final allocation exactly matched the baseline. A separate 65,537-byte reproduction confirmed 131,072 allocated bytes while the mutation handle remained open versus 69,632 after close. The recommended correction is to read the allocation after the mutation handle is closed.
 
 ## Release acceptance still required
 

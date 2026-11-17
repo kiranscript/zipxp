@@ -25,7 +25,8 @@ if ($SigningThumbprint) {
     $signature = "Signed with $SigningThumbprint"
 }
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'install.ps1'),(Join-Path $PSScriptRoot 'uninstall.ps1') -Destination $Output
-Copy-Item -LiteralPath (Join-Path $root 'README.md'),(Join-Path $root 'LICENSE'),(Join-Path $root 'docs/validation.md') -Destination $Output
+Copy-Item -LiteralPath (Join-Path $root 'README.md'),(Join-Path $root 'LICENSE'),(Join-Path $root 'CHANGELOG.md') -Destination $Output
+Copy-Item -LiteralPath (Join-Path $root 'docs') -Destination $Output -Recurse -Force
 Set-Content -LiteralPath (Join-Path $Output 'BUILD.txt') -Value "ZipXP $version`n$signature`nBuilt: $([DateTime]::UtcNow.ToString('O'))" -Encoding UTF8
 Get-ChildItem -LiteralPath $appFolder -File -Recurse | ForEach-Object {
     [PSCustomObject]@{ Path=$_.FullName.Substring($Output.TrimEnd('\').Length + 1); Hash=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }
