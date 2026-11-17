@@ -117,12 +117,6 @@
       }, 1500);
     }
     play.addEventListener("change", render);
-    $$(".gate", play).forEach(function (g) {
-      g.addEventListener("click", function (e) {
-        if (e.target.tagName === "INPUT") return;
-        var inp = $("input", g); inp.checked = !inp.checked; render();
-      });
-    });
     pauseBtn.addEventListener("click", function () { paused = !paused; render(); });
     $("#wq-reset").addEventListener("click", function () {
       $$("input[data-gate]", play).forEach(function (x) { x.checked = false; });

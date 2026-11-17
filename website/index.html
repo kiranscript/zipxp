@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ZipXP: transparent NTFS compression for Windows 11</title>
-  <meta name="description" content="ZipXP quietly compresses the folders you choose with native NTFS compression. Files keep their names and paths. Undo is one button.">
+  <meta name="description" content="ZipXP quietly compresses the folders you choose with native NTFS compression. Files keep their names and paths, and restoring is built in.">
   <meta name="theme-color" content="#0a1a33">
   <meta property="og:title" content="ZipXP: reclaim disk space without renaming a thing">
   <meta property="og:description" content="Policy-driven, measured, reversible NTFS compression for Windows 11. Runs quietly in the tray.">
@@ -100,10 +100,10 @@
   <div class="container hero__inner">
     <div>
       <span class="eyebrow-chip"><b>0.2</b> The fix for a full disk, on Windows 11</span>
-      <h1>Reclaim your disk.<br>Keep every file name.</h1>
+      <h1>More space.<br>Same files.</h1>
       <p class="hero__lede">
-        ZipXP watches the folders you pick and applies native NTFS compression one file at a time:
-        no archives, no renames, no new extensions. It measures what it saves, and one button puts everything back.
+        ZipXP shrinks the files in the folders you pick, in place, using Windows' built-in NTFS compression.
+        No archives, no renames, nothing deleted. Every result is measured, and <b>Restore original size</b> decompresses them again.
       </p>
       <div class="hero__actions">
         <a class="btn btn--lg" href="docs.html#quickstart">Get started <i class="arrow"></i></a>
@@ -112,7 +112,7 @@
       <div class="hero__meta">
         <span><svg><use href="#i-shield"/></svg> No admin rights</span>
         <span><svg><use href="#i-db"/></svg> Zero external packages</span>
-        <span><svg><use href="#i-undo"/></svg> Fully reversible</span>
+        <span><svg><use href="#i-undo"/></svg> Restore built in</span>
       </div>
     </div>
 
@@ -209,8 +209,8 @@
         </div>
         <div class="pillar__body">
           <span class="num">03 · Account</span>
-          <h3>Numbers you can trust</h3>
-          <p>Every operation is measured before and after, recorded once in a signed daily ledger, and never blended with estimates.</p>
+          <h3>Measured, not guessed</h3>
+          <p>Each successful, measurable operation records its signed before-and-after allocation once, in a daily ledger kept apart from estimates.</p>
           <ul>
             <li>Signed <code>before − after</code> allocations</li>
             <li>Decompression growth counts as negative</li>
@@ -259,8 +259,8 @@
   <div class="container">
     <div class="section-head reveal">
       <span class="eyebrow">How it works</span>
-      <h2 class="h-xl">From "disk full" to done,<br>in six quiet steps.</h2>
-      <p class="lede">You only do the first three. ZipXP keeps doing the rest from the tray, even with the window closed.</p>
+      <h2 class="h-xl">Six steps.<br>You do three.</h2>
+      <p class="lede">Add, review, decide. ZipXP keeps doing the rest from the tray while it's running, even with the window closed.</p>
     </div>
     <div class="steps">
       <div class="step" style="--d:0s"><h3>Add a folder</h3><p>Pick a local fixed NTFS folder like <code>C:\Users\you\Projects</code>. Overlapping roots are rejected up front.</p></div>
@@ -461,8 +461,8 @@
   <div class="container split">
     <div class="reveal">
       <span class="eyebrow">Reversible by default</span>
-      <h2 class="h-xl">Changed your mind?<br>Undo is a button.</h2>
-      <p class="lede">ZipXP never deletes, archives, or moves your files. Everything it does can be undone, and every recursive action shows you its scope before it runs.</p>
+      <h2 class="h-xl">Changed your mind?<br>Restore is built in.</h2>
+      <p class="lede">ZipXP never deletes, archives, or moves your files. <b>Restore original size</b> decompresses the files it manages when there's room for them, and every recursive action shows you its scope before it runs. Windows' own per-folder compression flags are a separate switch.</p>
       <ul class="checks">
         <li>Adding a folder only analyzes. It never compresses.</li>
         <li>"Compress now" is a one-off job. It doesn't turn on automation.</li>
@@ -497,7 +497,7 @@
       </details>
       <details>
         <summary>Will it slow down my PC?</summary>
-        <div class="ans"><p>ZipXP runs one below-normal-priority process with a single sequential worker, a 500 ms interval between files, and pauses new operations when sampled CPU is above 85%. These gates are checked between operations. They aren't hard resource caps.</p><p>Reading compressed files costs some CPU. On fast drives that's usually small. Measure it on your own workloads.</p></div>
+        <div class="ans"><p>ZipXP runs one below-normal-priority process with a single sequential worker, a 500 ms interval between files, and pauses new operations when sampled CPU is above 85%. These gates are checked between operations. They aren't hard resource caps.</p><p>Reading compressed files costs some CPU. How much depends on your files, hardware and workload, and broad performance measurements are still to come, so try it on representative tasks first.</p></div>
       </details>
       <details>
         <summary>Does it need administrator rights or a service?</summary>
