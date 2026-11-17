@@ -149,6 +149,17 @@ internal static class Program
         Check(decompressed.State == "Succeeded" && !decompressed.After!.Compressed && decompressed.Delta < 0, "decompression reports signed allocation growth");
         store.SaveJob(Job(root, result.After!, "Decompress") with { State = "Succeeded", Delta = decompressed.Delta, FinishedUtc = DateTime.UtcNow });
         Check(store.MeasuredSince(DateTime.MinValue).Delta == 0, "compression followed by decompression has zero net measured reduction");
+        // Non-aligned length: allocation read through the mutation handle used to overstate growth.
+        var oddRoot = root with { Policy = root.Policy with { MinimumBytes = 0, QuietSeconds = 0 } };
+        var oddPath = Path.Combine(fixture, "non-aligned.txt"); Text(oddPath, 65537);
+        var oddBaseline = NativeFiles.Read(oddPath);
+        var oddCompressed = new Mutator().Execute(oddRoot, Job(oddRoot, oddBaseline, "Compress"));
+        Check(oddCompressed.State == "Succeeded" && oddCompressed.After!.Compressed, "non-aligned file compresses");
+        var oddRestored = new Mutator().Execute(oddRoot, Job(oddRoot, oddCompressed.After!, "Decompress"));
+        Check(oddRestored.State == "Succeeded" && oddRestored.After!.Allocated == NativeFiles.Read(oddPath).Allocated, "reported allocation equals post-close allocation");
+        store.SaveJob(Job(oddRoot, oddBaseline, "Compress") with { State = "Succeeded", Delta = oddCompressed.Delta, FinishedUtc = DateTime.UtcNow });
+        store.SaveJob(Job(oddRoot, oddCompressed.After!, "Decompress") with { State = "Succeeded", Delta = oddRestored.Delta, FinishedUtc = DateTime.UtcNow });
+        Check(store.MeasuredSince(DateTime.MinValue).Delta == 0 && NativeFiles.Read(oddPath).Allocated == oddBaseline.Allocated, "non-aligned round trip nets zero in the ledger and restores baseline allocation");
 
         var locked = NativeFiles.Read(Path.Combine(fixture, "locked.txt"));
         using (var exclusive = new FileStream(locked.Path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))

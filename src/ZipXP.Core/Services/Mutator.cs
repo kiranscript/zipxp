@@ -7,6 +7,18 @@ public sealed class Mutator(Func<string, long>? freeSpace = null)
 {
     private readonly Func<string, long> freeSpace = freeSpace ?? (path => new DriveInfo(Path.GetPathRoot(path)!).AvailableFreeSpace);
 
+    private static FileRecord Remeasure(FileRecord observed, FileRecord before)
+    {
+        try
+        {
+            var fresh = NativeFiles.Read(observed.Path);
+            // A replaced file must not be measured against the original.
+            if (fresh.Identity == before.Identity) return fresh;
+        }
+        catch (Exception ex) when (Scope.FileError(ex)) { }
+        return observed with { Allocated = null };
+    }
+
     public MutationResult Execute(ManagedFolder root, WorkItem job)
     {
         try
@@ -34,8 +46,11 @@ public sealed class Mutator(Func<string, long>? freeSpace = null)
             var required = root.Policy.ReserveBytes + (!compress && !before.Directory ? before.Logical : 0);
             if (freeSpace(job.Path) < required) return new("Retry", $"Low free space; requires {Display.Bytes(required)} headroom.", before, Retryable: true);
             NativeFiles.SetCompression(handle, compress);
-            var after = NativeFiles.Read(handle, job.Path);
-            if (after.Compressed != compress) return new("Failed", "Expected compression state was not observed.", after);
+            var observed = NativeFiles.Read(handle, job.Path);
+            // Allocation read through the mutation handle can be stale; release it and re-measure from a fresh handle.
+            handle.Dispose();
+            if (observed.Compressed != compress) return new("Failed", "Expected compression state was not observed.", observed);
+            var after = Remeasure(observed, before);
             long? delta = !before.Directory && before.SameContent(after) && before.Allocated.HasValue && after.Allocated.HasValue
                 ? before.Allocated.Value - after.Allocated.Value : null;
             return new("Succeeded", before.Directory ? "Native default cleared; existing file contents unchanged."
