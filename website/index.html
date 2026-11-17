@@ -104,7 +104,7 @@
       <h1>More space.<br>Same files.</h1>
       <p class="hero__lede">
         ZipXP shrinks the files in the folders you pick, in place, using Windows' built-in NTFS compression.
-        No archives, no renames, nothing deleted. Every result is measured, and <b>Restore original size</b> decompresses them again.
+        No archives, no renames, nothing deleted. Each successful change is measured, and <b>Restore original size</b> decompresses them again.
       </p>
       <div class="hero__actions">
         <a class="btn btn--lg" href="docs.html#quickstart">Get started <i class="arrow"></i></a>
@@ -281,7 +281,7 @@
     <div class="section-head reveal">
       <span class="eyebrow">Try it: policy gates</span>
       <h2 class="h-xl">Polite by design.<br>Flip a switch and watch it wait.</h2>
-      <p class="lede">Gates are checked between operations, so the worker never starts a file at a bad moment. Toggle them below to watch the simulated queue respond.</p>
+      <p class="lede">Gates are checked between operations, so the worker won't start a new file while a condition says wait. Toggle them below to watch the simulated queue respond.</p>
     </div>
     <div class="play" id="playground">
       <div class="panel reveal">
@@ -359,6 +359,7 @@
         <p>Some files are excluded from changes outright, and a few kinds of location are refused altogether. ZipXP can't read a file's size or attributes? It shows an error. It doesn't count that file as zero.</p>
       </div>
       <div class="reveal" style="--d:.1s">
+        <p class="chips-legend"><span>File types never changed</span><span class="no">Locations refused</span></p>
         <div class="chips">
           <span>Hidden &amp; system files</span><span>Encrypted (EFS)</span><span>Sparse files</span><span>Offline / cloud recall</span>
           <span>Read-only files</span><span>Multiple hard links</span><span>Reparse points &amp; junctions</span>
@@ -388,7 +389,7 @@
     <div class="section-head reveal">
       <span class="eyebrow">Honest storage accounting</span>
       <h2 class="h-xl">Four numbers.<br>Never blended into one.</h2>
-      <p class="lede">Most "space saved" counters mix guesses with facts. ZipXP keeps what the drive reports, what it scanned, what it estimates, and what it actually measured in four separate places.</p>
+      <p class="lede">Most “space saved” counters mix guesses with facts. ZipXP keeps what the drive reports, what it scanned, what it estimates, and what it actually measured in four separate places.</p>
     </div>
     <div class="acct">
       <div class="acard reveal" style="--c:#12c2e9"><span class="ak">A</span><h3>Volume usage</h3><p>Live drive statistics. Includes activity from every other app, so it moves on its own.</p><div class="eq">DriveInfo · live, all apps</div></div>
@@ -421,7 +422,7 @@
   <div class="container dev">
     <div class="reveal">
       <span class="eyebrow">For developers</span>
-      <h2 class="h-xl">One command to run.<br>One ZIP to ship.</h2>
+      <h2 class="h-xl">Build it, run it, ship it.</h2>
       <p class="lede">Clone it and run it with the .NET 10 SDK, launch it from WSL with the Windows SDK, or publish a self-contained x64 package that needs no separate .NET runtime.</p>
       <ul>
         <li><span class="gi"><svg><use href="#i-terminal"/></svg></span><div><b>One-line dev loop</b><span><code>--fresh</code>, <code>--rebuild</code> and <code>--reset</code> flags. Ctrl+C asks the app to quit cleanly.</span></div></li>
@@ -478,7 +479,7 @@
       <p class="lede">ZipXP never deletes, archives, or moves your files. <b>Restore original size</b> decompresses the files it manages when there's room for them, and every recursive action shows you its scope before it runs. Windows' own per-folder compression flags are a separate switch.</p>
       <ul class="checks">
         <li>Adding a folder only analyzes. It never compresses.</li>
-        <li>"Compress now" is a one-off job. It doesn't turn on automation.</li>
+        <li>“Compress now” is a one-off job. It doesn't turn on automation.</li>
         <li>Quitting finishes the current file, then saves pending work.</li>
         <li>Crash? Running jobs become retry records and are rechecked.</li>
       </ul>
@@ -546,7 +547,7 @@
     <div class="cta__card reveal">
       <div>
         <h2 class="h-lg">Give your SSD some breathing room.</h2>
-        <p>Clone the repo, run one command, and add a folder of copies. ZipXP analyzes it before it changes a single byte.</p>
+        <p>Clone the repo, start it with <code>dotnet run</code>, and add a folder of copies. ZipXP analyzes it before it changes a single byte.</p>
       </div>
       <div class="cta__actions">
         <a class="btn btn--lg" href="docs.html#quickstart">Read the quickstart <i class="arrow"></i></a>

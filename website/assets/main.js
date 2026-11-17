@@ -158,9 +158,13 @@
     tabs.forEach(function (t, n) {
       t.addEventListener("click", function () { select(t); });
       t.addEventListener("keydown", function (e) {
-        var d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
-        if (!d) return;
-        var nt = tabs[(n + d + tabs.length) % tabs.length]; select(nt); nt.focus();
+        var nt;
+        if (e.key === "ArrowRight") nt = tabs[(n + 1) % tabs.length];
+        else if (e.key === "ArrowLeft") nt = tabs[(n - 1 + tabs.length) % tabs.length];
+        else if (e.key === "Home") nt = tabs[0];
+        else if (e.key === "End") nt = tabs[tabs.length - 1];
+        if (!nt) return;
+        e.preventDefault(); select(nt); nt.focus();
       });
     });
   });

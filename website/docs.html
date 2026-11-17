@@ -146,7 +146,7 @@
       <ul>
         <li>Local fixed NTFS only. ZipXP won't manage drive roots, Windows or Program Files locations, UNC or device paths, WSL filesystem roots, or paths that pass through reparse points.</li>
         <li>Hidden, system, encrypted, sparse, offline, read-only and multi-hard-link files are never changed.</li>
-        <li>Manual and automatic compression has been tested on files from 64 KiB to 256 MiB.</li>
+        <li>Manual and automatic compression works on files from 64 KiB to 256 MiB, the tested range. Files outside that range aren't compressed yet, and policies can't raise the maximum.</li>
         <li>Compression keeps a reserve of at least 256 MiB free. Decompression needs the file's full logical size plus that reserve. When space is short, the queue waits.</li>
         <li>One file changes at a time, with a 500 ms worker interval. Each folder's scan stops at 100,000 observations and says so. Split very large folders into smaller ones that don't overlap.</li>
         <li>No deletion, deduplication, cloud or network support, WOF, archive replacement, automatic elevation, or telemetry.</li>
