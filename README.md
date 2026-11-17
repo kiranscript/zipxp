@@ -72,6 +72,7 @@ tests/            real-filesystem checks
 scripts/          dev launcher, check, publish, install
 docs/             documentation
 assets/            logo and screenshots
+website/           project website (GitHub Pages)
 ```
 
 ## Contributing
