@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZipXP Docs: getting started</title>
+  <meta name="description" content="Install, run and use ZipXP: policies, undo, storage accounting, boundaries and recovery.">
+  <meta name="theme-color" content="#0a1a33">
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.5 2 2 6.6 2 12.2c0 4.5 2.9 8.3 6.8 9.7.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.4-3.4-1.4-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1.1 1.5 1.1.9 1.6 2.4 1.1 2.9.8.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.8 1a9.6 9.6 0 0 1 5 0c1.9-1.3 2.8-1 2.8-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10.2 10.2 0 0 0 22 12.2C22 6.6 17.5 2 12 2z"/></symbol>
+  </defs>
+</svg>
+
+<header class="nav is-stuck" id="top">
+  <div class="container nav__inner">
+    <a class="brand" href="./" aria-label="ZipXP home"><img src="assets/logo.svg" alt="" width="30" height="30"> ZipXP <small>Docs</small></a>
+    <nav class="nav__links" aria-label="Primary">
+      <a href="./#product">Product</a>
+      <a href="./#tour">Screenshots</a>
+      <a href="./#how">How it works</a>
+      <a href="./#safety">Safety</a>
+      <a href="./#accounting">Accounting</a>
+      <a href="docs.html">Docs</a>
+    </nav>
+    <div class="nav__spacer"></div>
+    <div class="nav__cta">
+      <a class="btn btn--ghost btn--sm" href="https://github.com/kiranscript/zipxp"><svg width="16" height="16"><use href="#i-github"/></svg> GitHub</a>
+    </div>
+    <button class="nav__menu" aria-label="Menu" aria-expanded="false" aria-controls="drawer"><span></span></button>
+  </div>
+  <div class="container nav__drawer" id="drawer">
+    <a href="./">Home</a>
+    <a href="./#how">How it works</a>
+    <a href="./#safety">Safety</a>
+    <a href="https://github.com/kiranscript/zipxp">GitHub</a>
+  </div>
+</header>
+
+<main id="main">
+<section class="docs-hero">
+  <div class="container">
+    <div class="crumbs"><a href="./">ZipXP</a> / Documentation</div>
+    <h1>Getting started</h1>
+    <p>Everything you need to run, use, verify and package ZipXP. It's a Windows 11 app built with C#, WPF and .NET 10, using ordinary NTFS compression.</p>
+  </div>
+</section>
+
+<div class="container docs">
+  <aside class="docs__nav" aria-label="On this page">
+    <h6>On this page</h6>
+    <ol>
+      <li><a href="#quickstart" class="is-active">Quickstart</a></li>
+      <li><a href="#using">Using ZipXP</a></li>
+      <li><a href="#undo">Undo &amp; stopping</a></li>
+      <li><a href="#accounting">Storage accounting</a></li>
+      <li><a href="#boundaries">Boundaries</a></li>
+      <li><a href="#state">State &amp; recovery</a></li>
+      <li><a href="#verify">Build &amp; verify</a></li>
+      <li><a href="#install">Publish &amp; install</a></li>
+      <li><a href="#layout">Source layout</a></li>
+    </ol>
+  </aside>
+
+  <article class="prose">
+    <div class="note note--warn"><div><b>Pre-release 0.2.</b> This is an unsigned build under active development. The development checks pass, but that doesn't make it production-ready or guarantee any amount of savings. Use disposable copies of your data for now.</div></div>
+
+    <section id="quickstart">
+      <h2>Quickstart</h2>
+      <p>ZipXP needs Windows 11 and a local NTFS drive. There's no installer download yet, so build it from source with the <a href="https://dotnet.microsoft.com/download">.NET 10 SDK</a>:</p>
+<pre><span class="p">PS&gt; </span>git clone https://github.com/kiranscript/zipxp.git
+<span class="p">PS&gt; </span>cd zipxp
+<span class="p">PS&gt; </span>dotnet run --project src/ZipXP.App/ZipXP.App.csproj</pre>
+      <p>Then choose <em>Managed folders → Add folder…</em>, pick a test folder that holds copies of some documents, and read the estimate.</p>
+      <h3>From WSL</h3>
+      <p>From the repository root:</p>
+<pre><span class="p">$ </span>./scripts/dev.sh</pre>
+      <p>This launches the native Windows app using Windows <code>dotnet.exe</code>. It looks on <code>PATH</code>, in <code>C:\Program Files\dotnet</code>, and in a local <code>C:\Temp\zipxp-dotnet</code> SDK. Set <code>WINDOWS_DOTNET_EXE</code> to another executable's WSL path if needed. A Linux SDK can't run WPF.</p>
+      <h3>Launcher options</h3>
+      <table>
+        <thead><tr><th>Flag</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>--fresh</code></td><td>Empty throwaway data. Your real data is untouched.</td></tr>
+          <tr><td><code>--rebuild</code></td><td>Deletes <code>bin/</code> and <code>obj/</code> first, so nothing stale is reused.</td></tr>
+          <tr><td><code>--reset</code></td><td>Erases your real saved data (asks for confirmation), then starts empty.</td></tr>
+          <tr><td><code>--data-dir 'C:\…'</code></td><td>Runs an isolated instance against a Windows path.</td></tr>
+        </tbody>
+      </table>
+      <p>Erasing data doesn't undo compression: files that are already compressed stay compressed. Press <kbd>Ctrl+C</kbd> to stop a dev run. The launcher asks the app to quit cleanly, and force-ends it after about 10 seconds if it doesn't.</p>
+    </section>
+
+    <section id="using">
+      <h2>Using ZipXP</h2>
+      <ol>
+        <li><strong>Add a folder.</strong> Select <em>Managed folders → Add folder…</em> and choose a local fixed NTFS folder, such as <code>C:\zipxp-test</code>. This starts a read-only analysis. WSL and UNC folders aren't supported.</li>
+        <li><strong>Inspect.</strong> Folder rows show policy, known logical and allocated totals, candidate bytes, status, scan time, and how many directories have Windows' own compression flag set. Double-click a folder in <em>Insights</em> to drill down, or choose <em>Largest files</em>.</li>
+        <li><strong>Turn on automation.</strong> Open <em>Folder settings</em>. Subfolder inclusion and battery behavior are on the first screen. Exclusions, size and benefit thresholds, quiet period, cooldown, schedule and free-space reserve are under <em>Advanced options</em>.</li>
+        <li><strong>Let it run.</strong> Eligible files are queued. New, copied-in, replaced and changed files are found through notifications and periodic scans. The recommended quiet period is 60 seconds, and reconciliation runs every two minutes. Busy files retry with backoff.</li>
+        <li><strong>Close the window.</strong> The tray worker keeps running. <em>Start when I sign in</em> registers the current launch command. <em>Pause all</em> or <em>Pause folder</em> stops new operations after the current one. <em>Quit ZipXP</em> finishes the current file, then exits and keeps pending work saved.</li>
+        <li><strong>Review activity.</strong> Search and filter outcomes, copy diagnostics, and retry selected failures. Retrying doesn't turn disabled automatic policies back on.</li>
+      </ol>
+      <div class="note"><div><b>Explicit by design.</b> Adding a folder never compresses it. <em>Compress now</em> is a one-off job that doesn't turn on future automation. Every recursive action shows a scope preview first.</div></div>
+    </section>
+
+    <section id="undo">
+      <h2>Undo &amp; stopping</h2>
+      <ul>
+        <li><strong>Restore original size…</strong> (Overview, Managed folders, or Storage insights) decompresses files so they take their full space again. Nothing is deleted. It first turns off automatic compression for that folder and cancels pending compression.</li>
+        <li><strong>Turn off Windows' own folder compression</strong> (More menu) is a separate job that clears the per-folder flags that make Windows compress new files automatically. It only touches directories within the policy scope. Files already compressed stay compressed.</li>
+        <li><strong>Stop managing this folder</strong> (More menu) removes the folder, its observations and its future jobs. Your files and their folders' compression flags stay as they are. Past measurements are kept.</li>
+      </ul>
+      <p>Decompression doesn't clear those folder flags. Its preview reports which folders still have them, any incomplete coverage, entries it left out, and the free space the largest single operation needs. Pausing or resuming the worker doesn't change the flags either. Windows applies them to new files even while ZipXP is closed, and in doing so it ignores ZipXP's exclusions and size limits.</p>
+    </section>
+
+    <section id="accounting">
+      <h2>Storage accounting</h2>
+      <p>All file measurements cover the primary data stream. Directory metadata and named streams are excluded. Unknown sizes display a dash. The UI keeps four quantities separate:</p>
+      <ol>
+        <li><strong>Volume usage and free space:</strong> current drive statistics, including activity from every other application.</li>
+        <li><strong>Managed allocation:</strong> known primary-stream allocations from each folder's latest scan, with scan timestamps and how much coverage is unknown. This isn't a single point-in-time snapshot of the volume.</li>
+        <li><strong>Estimated opportunity:</strong> three 32 KiB Deflate samples per eligible file, scaled up as a heuristic. NTFS uses a different algorithm, so this isn't a promise.</li>
+        <li><strong>Net measured reduction:</strong> signed <code>before − after</code> allocation for successful operations where the file's identity, length and last-write time stayed the same. Decompression growth is negative. A signed daily ledger keeps this total. It records each job once, survives restarts, and isn't affected when detailed history is pruned.</li>
+      </ol>
+      <p>The history chart plots scan allocations at actual scan times. Amber bars mean coverage was incomplete or unknown.</p>
+    </section>
+
+    <section id="boundaries">
+      <h2>Boundaries</h2>
+      <ul>
+        <li>Local fixed NTFS only. ZipXP won't manage drive roots, Windows or Program Files locations, UNC or device paths, WSL filesystem roots, or paths that pass through reparse points.</li>
+        <li>Hidden, system, encrypted, sparse, offline, read-only and multi-hard-link files are never changed.</li>
+        <li>Manual and automatic compression has been tested on files from 64 KiB to 256 MiB.</li>
+        <li>Compression always keeps at least 256 MiB free. Decompression needs the file's full logical size plus that reserve. When space is short, the queue waits.</li>
+        <li>One file changes at a time, with a 500 ms worker interval. Each folder's scan stops at 100,000 observations and says so. Split very large folders into smaller ones that don't overlap.</li>
+        <li>No deletion, deduplication, cloud or network support, WOF, archive replacement, automatic elevation, or telemetry.</li>
+      </ul>
+      <div class="note note--warn"><div>Native operations, identity checks and sharing restrictions make races less likely. They don't guarantee data integrity against every possible concurrent filesystem change.</div></div>
+    </section>
+
+    <section id="state">
+      <h2>State &amp; recovery</h2>
+      <p>State lives in <code>%LOCALAPPDATA%\ZipXP\StorageManager\storage.sqlite3</code>, plus its SQLite WAL/SHM files. SQLite is supplied by Windows' own <code>winsqlite3.dll</code>. There are no external NuGet or UI packages.</p>
+      <p>After a crash, jobs that were running become retry records, and each file's actual state and identity are checked again. Files changed while ZipXP was closed are found on startup. To back up, exit the tray worker normally and copy the state directory. Newer schema versions are rejected by older builds.</p>
+      <h3>Known issues</h3>
+      <p>After a restore, the app can measure a file's allocation before its handle is closed. That overstates growth for some file sizes and can show a small negative savings total. The files themselves aren't affected. Tracked in <a href="https://github.com/kiranscript/zipxp/issues/2">#2</a>.</p>
+    </section>
+
+    <section id="verify">
+      <h2>Build &amp; verify</h2>
+<pre><span class="c"># From the repository root on Windows</span>
+<span class="p">PS&gt; </span>.\scripts\check.ps1
+<span class="p">PS&gt; </span>.\scripts\check.ps1 -Dotnet C:\Temp\zipxp-dotnet\dotnet.exe</pre>
+      <p>The check harness uses the real core library on a fresh, disposable NTFS directory. It tests real compression, hashes, locks, hard links, folder compression flags, file replacements and the automatic worker. It also launches the actual WPF window and navigates it through native UI Automation. See the <a href="https://github.com/kiranscript/zipxp/blob/main/docs/validation.md">validation record</a> for what has been tested and what's still missing.</p>
+    </section>
+
+    <section id="install">
+      <h2>Publish &amp; install</h2>
+<pre><span class="p">PS&gt; </span>.\scripts\publish.ps1
+<span class="p">PS&gt; </span>.\scripts\package-check.ps1
+<span class="c"># From the extracted ZIP</span>
+<span class="p">PS&gt; </span>.\install.ps1 -StartAtLogin -Launch</pre>
+      <p>Publishing produces a self-contained Windows x64 app and a ZIP under <code>artifacts\</code>. It doesn't need a separate .NET runtime. Without a signing certificate, the package is labeled unsigned. The installer works per user, under <code>%LOCALAPPDATA%\Programs\ZipXP Storage Manager</code>, and never force-kills a running process. <code>uninstall.ps1</code> removes the app but leaves your managed files and database intact.</p>
+    </section>
+
+    <section id="layout">
+      <h2>Source layout</h2>
+<pre>src/ZipXP.Core/          Models, native handles/identities, SQLite store, analysis, rules, worker
+src/ZipXP.App/           WPF dashboard, controls, tray/single-instance/startup
+tests/ZipXP.Checks/      Real-service policy, native, persistence and automation checks
+tests/ZipXP.FolderTest/  Helper used by scripts/test-existing-folder.ps1
+scripts/                 dev.sh (WSL launcher), check, publish, install, uninstall
+docs/                    Usage, how it works, safety, install, development, validation
+website/                 This site</pre>
+      <p>A few internal identifiers still say <code>StorageManager</code> on purpose, so existing installs keep their data and startup entries: the data folder, the executable, the sign-in registry value, the single-instance name, and the install folder. The full reference lives in <a href="https://github.com/kiranscript/zipxp/tree/main/docs">docs/</a> in the repository.</p>
+    </section>
+  </article>
+</div>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__bottom" style="margin-top:0;border:0;padding-top:0">
+      <span>© <span data-year>2026</span> ZipXP. Windows, NTFS and .NET are trademarks of Microsoft.</span>
+      <a href="#top">Back to top ↑</a>
+    </div>
+  </div>
+</footer>
+<script src="assets/main.js" defer></script>
+</body>
+</html>
