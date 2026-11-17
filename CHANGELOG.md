@@ -1,0 +1,34 @@
+# Changelog
+
+All notable changes to ZipXP are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [Unreleased]
+
+### Added
+- One-line curl installer (`scripts/get.ps1`, served at `/install.ps1` on the website): downloads the release ZIP, verifies its SHA-256 and runs the per-user `install.ps1`.
+- Release ZIPs get a GitHub build attestation; `get.ps1` verifies it when `gh` is installed and signed in (`-RequireAttestation` makes it mandatory).
+- Release workflow: pushing a `v*` tag builds, checks and packages the app and attaches `ZipXP-win-x64.zip` and its `.sha256` to a GitHub release.
+
+### Known issues
+- After decompression, the measured allocation can be read before the file handle is closed, which overstates growth for some non-aligned file sizes and can show a small negative savings total. Tracked in [#2](https://github.com/kiranscript/zipxp/issues/2); details in [docs/validation.md](docs/validation.md).
+
+### Changed
+- Repository reorganised into `src/`, `tests/`, `scripts/` and `docs/`; projects renamed from `StorageManager.*` to `ZipXP.*`.
+- The window, tray icon and sidebar now say "ZipXP" instead of "ZipXP Storage Manager".
+- README rewritten as a product front page; the technical detail moved to `docs/`.
+- Added MIT license, solution file, `.editorconfig`, CI workflow and issue/PR templates.
+
+### Unchanged on purpose
+- Data folder, startup entry, single-instance name, executable name and install folder keep their `StorageManager` identifiers so existing installs and saved policies continue to work.
+
+## [0.2.0] (pre-release)
+
+### Added
+- Selective, policy-driven NTFS compression of managed folders: read-only analysis first, then optional automatic compression of existing, new, copied-in and changed files.
+- Persistent single-file-at-a-time queue with retry/backoff, quiet periods, cooldowns, schedules, battery, CPU and free-space gates, and crash recovery.
+- System-tray worker, optional start at sign-in, and **Restore original size** decompression.
+- Overview, managed folders, storage insights and searchable activity views with a signed (+/-) allocation ledger.
+- Self-contained publish package plus per-user install and uninstall scripts.
+
+### Removed
+- The earlier file-explorer alpha.

@@ -1,0 +1,25 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["website/**", ".github/workflows/pages.yml"]
+  pull_request:
+    paths-ignore: ["website/**", ".github/workflows/pages.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-check:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Build
+        run: dotnet build ZipXP.slnx --nologo -warnaserror
+      - name: Run checks
+        run: dotnet run --project tests/ZipXP.Checks/ZipXP.Checks.csproj --no-build

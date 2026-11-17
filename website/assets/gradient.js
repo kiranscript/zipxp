@@ -59,7 +59,7 @@
     gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
 
-    var colors = (canvas.dataset.colors || "#7b6cff,#3fd9ff,#ff8fc8,#ffc56b,#a493ff").split(",");
+    var colors = (canvas.dataset.colors || "#2f7df6,#4cc2ff,#6ea4ff,#9fe8ff,#8ab4ff").split(",");
     ["c0", "c1", "c2", "c3", "c4"].forEach(function (name, i) {
       gl.uniform3fv(gl.getUniformLocation(prog, name), hex(colors[i].trim()));
     });

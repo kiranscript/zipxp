@@ -50,41 +50,6 @@
     $$(".reveal").forEach(function (el) { el.classList.add("is-in"); });
   }
 
-  /* ---------- Hero mockup: live activity feed ---------- */
-  var feed = $("#mock-feed");
-  if (feed) {
-    var events = [
-      ["ok", "Compressed", "Projects\\assets\\atlas.psd", "−18.4 MiB"],
-      ["info", "Queued", "Downloads\\datasets\\events.csv", "quiet 60 s"],
-      ["ok", "Compressed", "Documents\\Reports\\q3-export.xlsx", "−2.1 MiB"],
-      ["warn", "Retry", "Projects\\build.log", "sharing violation"],
-      ["info", "Scanned", "Projects", "1,284 files"],
-      ["ok", "Compressed", "Downloads\\logs\\server-2026-11.log", "−41.7 MiB"],
-      ["info", "Skipped", "Videos\\clip.mp4", "poor benefit"],
-      ["ok", "Compressed", "Documents\\notes\\archive.json", "−640 KiB"],
-      ["warn", "Waiting", "worker", "on battery"],
-      ["ok", "Compressed", "Projects\\vendor\\sdk.dll", "−3.9 MiB"]
-    ];
-    var i = 0;
-    var push = function () {
-      var e = events[i++ % events.length];
-      var d = new Date();
-      var li = document.createElement("li");
-      li.innerHTML = "<time>" + d.toTimeString().slice(0, 8) + "</time><b class=\"" + e[0] + "\">" + e[1] + "</b><span>" + e[2] + "</span><span class=\"" + e[0] + "\">" + e[3] + "</span>";
-      feed.insertBefore(li, feed.firstChild);
-      while (feed.children.length > 7) feed.removeChild(feed.lastChild);
-    };
-    for (var k = 0; k < 5; k++) push();
-    if (!reduce) setInterval(push, 2200);
-
-    // Slowly drift the "net measured" card so the mockup feels alive.
-    var net = $("#mock-net"), netV = 12.84;
-    if (net && !reduce) setInterval(function () {
-      netV += Math.random() * 0.06;
-      net.textContent = netV.toFixed(2) + " GiB";
-    }, 2200);
-  }
-
   /* ---------- Policy-gate playground ---------- */
   var play = $("#playground");
   if (play) {
@@ -97,7 +62,7 @@
     var files = [
       ["Projects\\assets\\atlas.psd", 18.4],
       ["Downloads\\logs\\server.log", 41.7],
-      ["Documents\\export.xlsx", 2.1],
+      ["Documents\\notes\\meeting-notes.txt", 2.1],
       ["Videos\\clip.mp4", -1],
       ["Projects\\vendor\\sdk.dll", 3.9],
       ["Downloads\\datasets\\events.csv", 26.2],
@@ -152,12 +117,6 @@
       }, 1500);
     }
     play.addEventListener("change", render);
-    $$(".gate", play).forEach(function (g) {
-      g.addEventListener("click", function (e) {
-        if (e.target.tagName === "INPUT") return;
-        var inp = $("input", g); inp.checked = !inp.checked; render();
-      });
-    });
     pauseBtn.addEventListener("click", function () { paused = !paused; render(); });
     $("#wq-reset").addEventListener("click", function () {
       $$("input[data-gate]", play).forEach(function (x) { x.checked = false; });
@@ -199,9 +158,13 @@
     tabs.forEach(function (t, n) {
       t.addEventListener("click", function () { select(t); });
       t.addEventListener("keydown", function (e) {
-        var d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
-        if (!d) return;
-        var nt = tabs[(n + d + tabs.length) % tabs.length]; select(nt); nt.focus();
+        var nt;
+        if (e.key === "ArrowRight") nt = tabs[(n + 1) % tabs.length];
+        else if (e.key === "ArrowLeft") nt = tabs[(n - 1 + tabs.length) % tabs.length];
+        else if (e.key === "Home") nt = tabs[0];
+        else if (e.key === "End") nt = tabs[tabs.length - 1];
+        if (!nt) return;
+        e.preventDefault(); select(nt); nt.focus();
       });
     });
   });
