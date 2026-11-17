@@ -780,6 +780,12 @@ test("sorting refetches the complete matching set before the 500-item bound", as
     await expect(
         page.locator(".insights-table tbody tr").first(),
     ).toContainText("aaa-compressed.txt");
+    const tiny = page.locator(".insights-table tbody tr").first();
+    await expect(tiny.getByText("<1%", { exact: true })).toBeVisible();
+    await expect(tiny.getByRole("meter")).toHaveAttribute(
+        "aria-valuetext",
+        "Less than 1%",
+    );
     await page.screenshot({ path: `${artifacts}/large-insights.png` });
 });
 
@@ -963,7 +969,7 @@ test("storage status preserves compression state alongside the eligibility reaso
         .locator(".insights-table tbody tr")
         .filter({ hasText: "application.log" });
     await expect(compressed.locator("td.notes")).toHaveText(
-        "Compressed · Too small to be worth compressing",
+        "Compressed · Below the size limit for new compression",
     );
     await expect(compressed.getByRole("checkbox")).toBeEnabled();
     const uncompressed = page
@@ -976,4 +982,65 @@ test("storage status preserves compression state alongside the eligibility reaso
     await page.screenshot({
         path: `${artifacts}/compression-and-eligibility.png`,
     });
+});
+
+test("search focus surrounds its complete control and high contrast keeps logo and disabled controls legible", async ({
+    page,
+}) => {
+    await openApp(page);
+    for (const contrast of [false, true]) {
+        await page.emulateMedia({ forcedColors: contrast ? "active" : "none" });
+        for (const [screen, name] of [
+            ["Storage insights", "Search files"],
+            ["Activity", "Search activity"],
+        ]) {
+            await nav(page, screen).click();
+            if (screen === "Storage insights")
+                await expect(
+                    page.getByRole("button", { name: "Client projects" }),
+                ).toBeVisible();
+            const search = page.getByRole("textbox", { name });
+            await search.focus();
+            const container = search.locator("..");
+            await expect(container).toHaveCSS("outline-width", "3px");
+            await expect(container).toHaveCSS("outline-offset", "3px");
+            await expect(search).toHaveCSS("outline-style", "none");
+            await page.screenshot({
+                path: `${artifacts}/search-focus-${contrast ? "high-contrast" : "normal"}-${screen === "Activity" ? "activity" : "insights"}.png`,
+            });
+        }
+        if (contrast) {
+            await expect(page.locator(".brand-icon")).toHaveCSS(
+                "forced-color-adjust",
+                "none",
+            );
+            const colors = await page.locator(".brand-icon").evaluate((el) => ({
+                foreground: getComputedStyle(el).color,
+                background: getComputedStyle(el).backgroundColor,
+                glyph: getComputedStyle(el.querySelector("svg")!).stroke,
+            }));
+            expect(colors.foreground).not.toBe(colors.background);
+            expect(colors.glyph).toBe(colors.foreground);
+            await nav(page, "Storage insights").click();
+            const disabled = page.getByRole("button", {
+                name: "Restore selected",
+                exact: true,
+            });
+            await expect(disabled).toBeDisabled();
+            await expect(disabled).toHaveCSS("opacity", "1");
+            expect(
+                await disabled.evaluate((el) => {
+                    const probe = document.createElement("span");
+                    probe.style.color = "GrayText";
+                    document.body.append(probe);
+                    const gray = getComputedStyle(probe).color,
+                        style = getComputedStyle(el);
+                    const correct =
+                        style.color === gray && style.borderColor === gray;
+                    probe.remove();
+                    return correct;
+                }),
+            ).toBe(true);
+        }
+    }
 });

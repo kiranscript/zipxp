@@ -56,6 +56,8 @@ export async function openApp(page: Page, scenario: Scenario = {}) {
             if (scenario.uncompressedRow) {
                 insights.rows[4].compressed = false;
                 insights.rows[4].notes = "Can be compressed";
+                insights.rows[4].logical = 128 * 1024;
+                insights.rows[4].allocated = 128 * 1024;
             }
             if (scenario.longNames) {
                 snapshot.folders[0].name =

@@ -958,7 +958,8 @@ footer > span:nth-child(2) {
 }
 .segmented .chosen {
     background: #ececec;
-    color: #505050;
+    color: var(--ink);
+    font-weight: 650;
     box-shadow: inset 0 0 0 1px #c9c9c9;
 }
 .search {
@@ -970,6 +971,13 @@ footer > span:nth-child(2) {
     padding: 0 10px;
     color: var(--muted);
     margin-left: auto;
+}
+.search:focus-within {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+}
+.search input:focus-visible {
+    outline: none;
 }
 .search input {
     border: 0 !important;
@@ -1600,6 +1608,21 @@ select[aria-invalid="true"] {
     }
     button.primary:hover {
         background: ButtonText;
+    }
+    .brand-icon {
+        background: ButtonText;
+        color: ButtonFace;
+        forced-color-adjust: none;
+    }
+    button:disabled,
+    button.primary:disabled,
+    button[aria-disabled="true"]:not([aria-busy="true"]) {
+        color: GrayText;
+        border-color: GrayText;
+        background: ButtonFace;
+        opacity: 1;
+        box-shadow: none;
+        forced-color-adjust: none;
     }
     .segmented button {
         background: ButtonFace;

@@ -128,8 +128,12 @@ function storageStatus(row: Insight): string {
         : row.logical == null
           ? "Compression state unavailable"
           : "Not compressed";
-    return row.notes && !(row.compressed && row.notes === "Already compressed")
-        ? `${state} · ${row.notes}`
+    const note =
+        row.compressed && row.notes === "Too small to be worth compressing"
+            ? "Below the size limit for new compression"
+            : row.notes;
+    return note && !(row.compressed && note === "Already compressed")
+        ? `${state} · ${note}`
         : state;
 }
 function when(value: string): string {
@@ -138,8 +142,12 @@ function when(value: string): string {
         ? `Today, ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
         : date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
+function percentage(value: number): string {
+    return value > 0 && value < 0.01 ? "<1%" : `${Math.round(value * 100)}%`;
+}
 function Meter({ value, label }: { value: number; label: string }) {
-    const percent = Math.round(Math.max(0, Math.min(1, value)) * 100);
+    const fraction = Math.max(0, Math.min(1, value));
+    const percent = fraction * 100;
     return (
         <div
             className="meter"
@@ -148,8 +156,11 @@ function Meter({ value, label }: { value: number; label: string }) {
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={percent}
+            aria-valuetext={percentage(fraction).replace("<", "Less than ")}
         >
-            <span style={{ width: `${percent}%` }} />
+            <span
+                style={{ width: `${percent}%`, minWidth: percent > 0 ? 2 : 0 }}
+            />
         </div>
     );
 }
@@ -1681,14 +1692,12 @@ function InsightsPage({
                                                         label={`Share of displayed measured space for ${r.name}`}
                                                     />
                                                     <span>
-                                                        {Math.round(
+                                                        {percentage(
                                                             total
-                                                                ? (r.allocated /
-                                                                      total) *
-                                                                      100
+                                                                ? r.allocated /
+                                                                      total
                                                                 : 0,
                                                         )}
-                                                        %
                                                     </span>
                                                 </div>
                                             )}

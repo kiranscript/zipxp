@@ -80,8 +80,8 @@ export const insights: Insights = {
         path: `${snapshot.folders[0].path}\\${name}`,
         name,
         directory: i < 2,
-        logical: (2 - i * 0.35) * gb,
-        allocated: (1.4 - i * 0.25) * gb,
+        logical: i === 3 ? 32 * 1024 : (2 - i * 0.35) * gb,
+        allocated: i === 3 ? 16 * 1024 : (1.4 - i * 0.25) * gb,
         compressed: i >= 2,
         notes:
             i === 2
