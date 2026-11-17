@@ -48,14 +48,14 @@ test("settings keep actions visible, validate blanks, and restore keyboard focus
     );
     await page.screenshot({
         path: `${artifacts}/settings-validation.png`,
-        fullPage: true,
+        fullPage: false,
     });
     await page.keyboard.press("Tab");
     await expect(minimum).not.toBeFocused();
     await expect(page.locator(".field-error svg")).toBeVisible();
     await page.screenshot({
         path: `${artifacts}/settings-validation-unfocused.png`,
-        fullPage: true,
+        fullPage: false,
     });
     await page.locator(".dialog-body").evaluate((el) => {
         el.scrollTop = el.scrollHeight;
@@ -98,7 +98,7 @@ test("busy operations preserve focus and allow navigation and search", async ({
     await expect(compress).toBeFocused();
     await expect(compress).toHaveAttribute("aria-busy", "true");
     await expect(compress.locator("svg:visible")).toHaveCount(1);
-    await page.screenshot({ path: `${artifacts}/busy.png`, fullPage: true });
+    await page.screenshot({ path: `${artifacts}/busy.png`, fullPage: false });
     await nav(page, "Activity").click();
     await page
         .getByRole("textbox", { name: "Search activity" })
@@ -131,7 +131,7 @@ test("action failures are dismissible and do not offer connection recovery", asy
     ).not.toBeVisible();
     await page.screenshot({
         path: `${artifacts}/action-error.png`,
-        fullPage: true,
+        fullPage: false,
     });
     expect(
         (
@@ -200,7 +200,7 @@ test("global pause is visible and attention links filter failed activity", async
         page.getByRole("button", { name: "Resume all folders", exact: true }),
     ).toHaveCount(1);
     await expect(page.getByRole("status")).toHaveCount(0);
-    await page.screenshot({ path: `${artifacts}/paused.png`, fullPage: true });
+    await page.screenshot({ path: `${artifacts}/paused.png`, fullPage: false });
     await nav(page, "Managed folders").click();
     await expect(
         page.getByText("Paused globally", { exact: true }),
@@ -225,7 +225,7 @@ test("empty and disconnected states explain the next step", async ({
     await expect(
         page.getByRole("button", { name: "Choose your first folder" }),
     ).toBeVisible();
-    await page.screenshot({ path: `${artifacts}/empty.png`, fullPage: true });
+    await page.screenshot({ path: `${artifacts}/empty.png`, fullPage: false });
 });
 
 test("connection failure has retry and no misleading loading indicator", async ({
@@ -242,7 +242,7 @@ test("connection failure has retry and no misleading loading indicator", async (
     ).toBeVisible();
     await page.screenshot({
         path: `${artifacts}/connection-error.png`,
-        fullPage: true,
+        fullPage: false,
     });
 });
 
@@ -266,7 +266,7 @@ test("minimum desktop size keeps settings actions reachable, including high cont
     ).toBe(false);
     await page.screenshot({
         path: `${artifacts}/minimum-settings.png`,
-        fullPage: true,
+        fullPage: false,
     });
     await page.emulateMedia({ forcedColors: "active" });
     await expect(
@@ -274,7 +274,7 @@ test("minimum desktop size keeps settings actions reachable, including high cont
     ).toBeInViewport();
     await page.screenshot({
         path: `${artifacts}/high-contrast.png`,
-        fullPage: true,
+        fullPage: false,
     });
 });
 
@@ -363,7 +363,7 @@ test("many folders keep the selected folder actions nearby", async ({
     expect(dimensions.doc).toBeLessThan(dimensions.viewport + 150);
     await page.screenshot({
         path: `${artifacts}/many-folders.png`,
-        fullPage: true,
+        fullPage: false,
     });
 });
 
@@ -420,7 +420,7 @@ test("Quit remains available when the engine connection fails", async ({
     ).not.toBeVisible();
     await page.screenshot({
         path: `${artifacts}/quit-disconnected.png`,
-        fullPage: true,
+        fullPage: false,
     });
 });
 
@@ -451,7 +451,7 @@ test("Quit and startup remain independent of a pending engine action", async ({
     await expect(page.locator("svg.spin:visible")).toHaveCount(1);
     await page.screenshot({
         path: `${artifacts}/quit-busy.png`,
-        fullPage: true,
+        fullPage: false,
     });
 });
 
@@ -592,7 +592,7 @@ test("waiting, running and retry jobs describe their actual state instead of cla
     ).toHaveCount(0);
     await page.screenshot({
         path: `${artifacts}/pending-activity.png`,
-        fullPage: true,
+        fullPage: false,
     });
     await page.setViewportSize({ width: 900, height: 720 });
     await expect(
@@ -612,7 +612,7 @@ test("waiting, running and retry jobs describe their actual state instead of cla
     ).toBeInViewport();
     await page.screenshot({
         path: `${artifacts}/compact-pending-activity.png`,
-        fullPage: true,
+        fullPage: false,
     });
 });
 
@@ -644,7 +644,7 @@ test("monochrome error, attention and operational feedback retain separate hiera
     await expect(page.locator(".attention-card")).toHaveCount(0);
     await page.screenshot({
         path: `${artifacts}/error-hierarchy.png`,
-        fullPage: true,
+        fullPage: false,
     });
 });
 
@@ -683,4 +683,214 @@ test("failure counts remain in accessible names when another banner is showing",
     await expect(
         page.getByText("application.log", { exact: true }),
     ).toBeVisible();
+});
+
+test("settings contain scrolling and expose live errors through the footer", async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 900, height: 640 });
+    await openApp(page);
+    await nav(page, "Managed folders").click();
+    await page
+        .getByRole("button", { name: "Settings for Work projects" })
+        .click();
+    await page.getByText("Advanced settings", { exact: true }).click();
+    const originalY = await page.evaluate(() => scrollY);
+    await page.mouse.move(890, 600);
+    await page.mouse.wheel(0, 600);
+    await expect.poll(() => page.evaluate(() => scrollY)).toBe(originalY);
+    await expect(page.locator("html")).toHaveCSS("overflow", "hidden");
+    const maximum = page.getByRole("spinbutton", {
+        name: "Maximum file size (MB)",
+        exact: true,
+    });
+    await page
+        .getByRole("spinbutton", {
+            name: "Minimum file size (KB)",
+            exact: true,
+        })
+        .fill("2048");
+    await maximum.fill("1");
+    await maximum.press("Tab");
+    await expect(maximum).toHaveAttribute("aria-invalid", "true");
+    await expect(
+        page.getByText("Minimum file size must not exceed maximum file size.", {
+            exact: true,
+        }),
+    ).toBeVisible();
+    await page.locator(".dialog-body").evaluate((el) => {
+        el.scrollTop = el.scrollHeight;
+    });
+    await page
+        .getByRole("button", { name: "1 setting needs attention", exact: true })
+        .click();
+    await expect(maximum).toBeFocused();
+    await expect(
+        page.getByText("Minimum file size must not exceed maximum file size.", {
+            exact: true,
+        }),
+    ).toBeInViewport();
+    await maximum.fill("256");
+    await maximum.press("Tab");
+    await page.getByLabel("Only between", { exact: true }).check();
+    await page.getByLabel("Start time", { exact: true }).selectOption("8");
+    const end = page.getByLabel("End time", { exact: true });
+    await end.selectOption("8");
+    await end.press("Tab");
+    await expect(end).toHaveAttribute("aria-invalid", "true");
+    await expect(end).toHaveAttribute(
+        "aria-describedby",
+        "schedule-hint schedule-error",
+    );
+    await page
+        .getByRole("button", { name: "1 setting needs attention", exact: true })
+        .click();
+    await expect(page.getByLabel("Start time", { exact: true })).toBeFocused();
+    await expect(page.locator("#schedule-error")).toBeInViewport();
+    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(page.locator("html")).not.toHaveCSS("overflow", "hidden");
+});
+
+test("sorting refetches the complete matching set before the 500-item bound", async ({
+    page,
+}) => {
+    await openApp(page, { manyInsights: true });
+    await nav(page, "Storage insights").click();
+    await expect(
+        page.getByText("502 matching items", { exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.getByText("aaa-compressed.txt", { exact: true }),
+    ).toHaveCount(0);
+    await page
+        .getByRole("combobox", { name: "Sort storage items" })
+        .selectOption("logical");
+    await expect(
+        page.getByText("aaa-compressed.txt", { exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.locator(".insights-table tbody tr").first(),
+    ).toContainText("aaa-compressed.txt");
+    await page
+        .getByRole("combobox", { name: "Sort storage items" })
+        .selectOption("name");
+    await expect(
+        page.getByText("Updating results…", { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+        page.locator(".insights-table tbody tr").first(),
+    ).toContainText("aaa-compressed.txt");
+    await page.screenshot({ path: `${artifacts}/large-insights.png` });
+});
+
+test("long folder names remain contained with accessible full names", async ({
+    page,
+}) => {
+    for (const width of [900, 1000]) {
+        await page.setViewportSize({ width, height: 720 });
+        await openApp(page, { longNames: true });
+        await nav(page, "Managed folders").click();
+        const name = page.locator(".folder-main strong").first();
+        await expect(name).toHaveAttribute(
+            "title",
+            (await name.textContent()) ?? "",
+        );
+        const label = await name.boundingBox();
+        const size = await page.locator(".folder-size").first().boundingBox();
+        expect(label!.x + label!.width).toBeLessThanOrEqual(size!.x);
+        const overflow = await page.evaluate(() => ({
+            width: document.documentElement.scrollWidth,
+            offenders: [...document.querySelectorAll("body *")]
+                .filter(
+                    (el) => el.getBoundingClientRect().right > innerWidth + 1,
+                )
+                .map((el) => `${el.tagName}.${el.className}`)
+                .slice(0, 10),
+        }));
+        expect(
+            overflow.width,
+            JSON.stringify(overflow.offenders),
+        ).toBeLessThanOrEqual(width);
+        await page.screenshot({
+            path: `${artifacts}/long-folders-${width}.png`,
+        });
+    }
+});
+
+test("modal backdrop covers the scrollbar gutter and forced-color primaries use paired system colors", async ({
+    page,
+}) => {
+    await openApp(page);
+    await nav(page, "Managed folders").click();
+    await page
+        .getByRole("button", { name: "Settings for Work projects" })
+        .click();
+    const modalHeight = await page
+        .getByRole("dialog")
+        .evaluate((el) => el.getBoundingClientRect().height);
+    expect(modalHeight).toBeLessThan(900 * 0.75);
+    await expect(page.locator("html")).toHaveCSS("scrollbar-gutter", "auto");
+    expect(
+        await page.evaluate(() => document.documentElement.clientWidth),
+    ).toBe(1280);
+    // This five-pixel crop records the previously uncovered scrollbar gutter.
+    await page.screenshot({
+        path: `${artifacts}/modal-right-edge.png`,
+        clip: { x: 1275, y: 0, width: 5, height: 900 },
+    });
+    const edge = await page.screenshot({
+        clip: { x: 1275, y: 400, width: 5, height: 5 },
+    });
+    const pixel = await page.evaluate(async (data) => {
+        const image = new Image();
+        image.src = `data:image/png;base64,${data}`;
+        await image.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = 5;
+        const context = canvas.getContext("2d")!;
+        context.drawImage(image, 0, 0);
+        return Array.from(context.getImageData(2, 2, 1, 1).data).slice(0, 3);
+    }, edge.toString("base64"));
+    expect(pixel.every((channel) => channel < 220)).toBe(true);
+    await page.emulateMedia({ forcedColors: "active" });
+    const primary = page.getByRole("button", {
+        name: "Save settings",
+        exact: true,
+    });
+    await expect(primary).toHaveCSS("forced-color-adjust", "none");
+    expect(
+        await primary.evaluate((el) => {
+            const system = document.createElement("span");
+            system.style.color = "ButtonFace";
+            system.style.backgroundColor = "ButtonText";
+            document.body.append(system);
+            const actual = getComputedStyle(el),
+                expected = getComputedStyle(system);
+            const paired =
+                actual.color === expected.color &&
+                actual.backgroundColor === expected.backgroundColor;
+            system.remove();
+            return paired;
+        }),
+    ).toBe(true);
+    await page.screenshot({ path: `${artifacts}/high-contrast-settings.png` });
+    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    for (const name of [
+        "Overview",
+        "Managed folders",
+        "Storage insights",
+        "Activity",
+    ]) {
+        await nav(page, name).click();
+        await expect(
+            page.getByRole("heading", { name, exact: true }),
+        ).toBeVisible();
+        if (name === "Storage insights")
+            await expect(
+                page.getByRole("button", { name: "Client projects" }),
+            ).toBeVisible();
+        await page.screenshot({
+            path: `${artifacts}/high-contrast-${name.toLowerCase().replaceAll(" ", "-")}.png`,
+        });
+    }
 });

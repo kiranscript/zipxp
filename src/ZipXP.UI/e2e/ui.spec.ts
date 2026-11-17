@@ -17,7 +17,7 @@ test("review all screens with realistic desktop data", async ({ page }) => {
     ).toBeVisible();
     await page.screenshot({
         path: `${artifacts}/overview.png`,
-        fullPage: true,
+        fullPage: false,
     });
     const audit = async (name: string) => {
         const report = await new AxeBuilder({ page })
@@ -57,7 +57,7 @@ test("review all screens with realistic desktop data", async ({ page }) => {
         await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
         await page.screenshot({
             path: `${artifacts}/${file}.png`,
-            fullPage: true,
+            fullPage: false,
         });
         await audit(file);
     }
@@ -69,7 +69,7 @@ test("review all screens with realistic desktop data", async ({ page }) => {
     await audit("more-actions");
     await page.screenshot({
         path: `${artifacts}/more-actions.png`,
-        fullPage: true,
+        fullPage: false,
     });
     await page.keyboard.press("Escape");
     await page
@@ -81,12 +81,15 @@ test("review all screens with realistic desktop data", async ({ page }) => {
     ).toBeInViewport();
     await page.screenshot({
         path: `${artifacts}/settings.png`,
-        fullPage: true,
+        fullPage: false,
     });
     await audit("settings");
     await page.getByRole("button", { name: "Cancel", exact: true }).click();
     await page.setViewportSize({ width: 1000, height: 720 });
-    await page.screenshot({ path: `${artifacts}/compact.png`, fullPage: true });
+    await page.screenshot({
+        path: `${artifacts}/compact.png`,
+        fullPage: false,
+    });
     for (const [name, file] of [
         ["Storage insights", "compact-insights"],
         ["Activity", "compact-activity"],
@@ -102,7 +105,7 @@ test("review all screens with realistic desktop data", async ({ page }) => {
         await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
         await page.screenshot({
             path: `${artifacts}/${file}.png`,
-            fullPage: true,
+            fullPage: false,
         });
         const table = page.getByRole("region", {
             name:
@@ -110,13 +113,9 @@ test("review all screens with realistic desktop data", async ({ page }) => {
         });
         await table.focus();
         await expect(table).toBeFocused();
-        await table.evaluate((element) => {
-            element.scrollLeft = element.scrollWidth;
-        });
-        await page.screenshot({
-            path: `${artifacts}/${file}-scrolled.png`,
-            fullPage: true,
-        });
+        expect(
+            await table.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+        ).toBe(true);
     }
     await page.setViewportSize({ width: 900, height: 640 });
     for (const [name, file] of [
@@ -142,7 +141,7 @@ test("review all screens with realistic desktop data", async ({ page }) => {
             ).toBeInViewport({ ratio: 0.99 });
         await page.screenshot({
             path: `${artifacts}/${file}.png`,
-            fullPage: true,
+            fullPage: false,
         });
         expect(
             await page.evaluate(

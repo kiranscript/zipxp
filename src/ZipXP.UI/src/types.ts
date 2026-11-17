@@ -81,6 +81,7 @@ export interface Commands {
             path: string;
             largest: boolean;
             search: string;
+            sort: "allocated" | "logical" | "name";
         };
         result: Insights;
     };

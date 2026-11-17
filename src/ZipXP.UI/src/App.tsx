@@ -19,6 +19,7 @@ import {
     ChevronDown,
     ChevronRight,
     Clock3,
+    CircleMinus,
     FileText,
     Eye,
     Folder,
@@ -66,10 +67,14 @@ const ActionState = createContext({ busy: false, active: "" });
 function ActionButton({
     children,
     actionLabel,
+    confirmation,
     onClick,
     disabled,
     ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { actionLabel?: string }) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+    actionLabel?: string;
+    confirmation?: boolean;
+}) {
     const { busy, active } = useContext(ActionState);
     const id = useId();
     const label =
@@ -88,6 +93,7 @@ function ActionButton({
             {...props}
             data-action-id={id}
             data-action-label={label}
+            data-confirmation={confirmation || undefined}
             aria-label={props["aria-label"]}
             disabled={disabled}
             aria-disabled={busy || undefined}
@@ -213,6 +219,7 @@ export default function App() {
     const startupRevision = useRef(0);
     const [active, setActive] = useState("");
     const [actionLabel, setActionLabel] = useState("");
+    const [confirmation, setConfirmation] = useState(false);
     const [selectedId, setSelectedId] = useState("");
     const [editing, setEditing] = useState<ManagedFolder | null>(null);
     const [activityFilter, setActivityFilter] = useState("All");
@@ -254,6 +261,7 @@ export default function App() {
         command.current = true;
         const button = document.activeElement as HTMLElement | null;
         setActive(button?.dataset.actionId ?? "");
+        setConfirmation(button?.dataset.confirmation === "true");
         setActionLabel(button?.dataset.actionLabel || "Updating your folders");
         setBusy(true);
         setError("");
@@ -344,12 +352,14 @@ export default function App() {
             ? { Icon: Unplug, text: "Engine connection unavailable" }
             : data?.paused
               ? { Icon: Pause, text: "Background work paused" }
-              : data?.currentFile
-                ? { Icon: Activity, text: `Working on ${data.currentFile}` }
-                : {
-                      Icon: data ? Eye : Unplug,
-                      text: data?.status ?? "Not connected",
-                  };
+              : data && !folders.length
+                ? { Icon: Folder, text: "No folders yet" }
+                : data?.currentFile
+                  ? { Icon: Activity, text: `Working on ${data.currentFile}` }
+                  : {
+                        Icon: data ? Eye : Unplug,
+                        text: data?.status ?? "Not connected",
+                    };
     return (
         <ActionState.Provider
             value={{
@@ -467,11 +477,6 @@ export default function App() {
                                 page !== "Managed folders") ||
                                 folders.length > 0) && (
                                 <ActionButton
-                                    className={
-                                        page === "Overview"
-                                            ? undefined
-                                            : "primary"
-                                    }
                                     disabled={!data}
                                     onClick={() => void add()}
                                 >
@@ -537,7 +542,9 @@ export default function App() {
                                 <span>
                                     {quitting
                                         ? "Stopping background work. Pending work stays queued for next time."
-                                        : "Working on your request. Check the confirmation dialog if prompted."}
+                                        : confirmation
+                                          ? "Review the Windows preview or confirmation dialog to continue. You can still browse and search."
+                                          : "Folder actions will be available when this request finishes. You can still browse and search."}
                                 </span>
                             </div>
                         </div>
@@ -565,6 +572,18 @@ export default function App() {
                                 Resume all folders
                             </ActionButton>
                         </div>
+                    )}
+                    {quitting && (
+                        <section
+                            className="shutdown-state"
+                            aria-label="Shutdown information"
+                        >
+                            <Power size={32} />
+                            <h2>See you next time</h2>
+                            <p>
+                                Your folders and settings are saved on this PC.
+                            </p>
+                        </section>
                     )}
                     {!quitting &&
                         (!data ? (
@@ -740,7 +759,7 @@ function Overview({
                         <AlertCircle size={20} />
                     </span>
                     <div>
-                        <strong>
+                        <strong id="attention-heading">
                             {failed}{" "}
                             {failed === 1 ? "file needs" : "files need"}{" "}
                             attention
@@ -750,7 +769,10 @@ function Overview({
                             and retry when ready.
                         </p>
                     </div>
-                    <button onClick={openFailures}>
+                    <button
+                        aria-describedby="attention-heading"
+                        onClick={openFailures}
+                    >
                         Review activity <ArrowUpRight size={16} />
                     </button>
                 </div>
@@ -770,6 +792,7 @@ function Overview({
                     <div className="actions">
                         <ActionButton
                             className="primary"
+                            confirmation
                             disabled={!available || data.paused}
                             onClick={() => void queue("Compress")}
                         >
@@ -1054,7 +1077,7 @@ function FolderPanel({
                                         <Folder size={23} />
                                     </span>
                                     <span>
-                                        <strong>{f.name}</strong>
+                                        <strong title={f.name}>{f.name}</strong>
                                         <small title={f.path}>{f.path}</small>
                                     </span>
                                 </button>
@@ -1097,7 +1120,9 @@ function FolderPanel({
                         <div className="folder-detail">
                             <div className="section-heading">
                                 <div>
-                                    <h3>{selected.name}</h3>
+                                    <h3 title={selected.name}>
+                                        {selected.name}
+                                    </h3>
                                     <p>
                                         {selected.policy.paused ||
                                         globallyPaused ? (
@@ -1134,6 +1159,7 @@ function FolderPanel({
                                                   : "Preview a one-time compression job"
                                     }
                                     className="primary"
+                                    confirmation
                                     onClick={() =>
                                         void queue("Compress", selected.id)
                                     }
@@ -1175,6 +1201,7 @@ function FolderPanel({
                                 <MoreActions>
                                     <ActionButton
                                         actionLabel="Restore original size"
+                                        confirmation
                                         onClick={() =>
                                             void queue(
                                                 "Decompress",
@@ -1194,6 +1221,7 @@ function FolderPanel({
                                     </ActionButton>
                                     <ActionButton
                                         actionLabel="Turn off Windows compression"
+                                        confirmation
                                         disabled={
                                             !selected.scan?.nativeDefaults
                                         }
@@ -1217,6 +1245,7 @@ function FolderPanel({
                                     </ActionButton>
                                     <ActionButton
                                         actionLabel="Stop managing this folder"
+                                        confirmation
                                         className="danger"
                                         onClick={() =>
                                             void act(() =>
@@ -1302,7 +1331,13 @@ function InsightsPage({
         setError("");
         setChecked([]);
         const timer = setTimeout(() => {
-            request("insights", { rootId: selected.id, path, largest, search })
+            request("insights", {
+                rootId: selected.id,
+                path,
+                largest,
+                search,
+                sort,
+            })
                 .then((value) => {
                     if (active) {
                         setResult(value);
@@ -1320,12 +1355,8 @@ function InsightsPage({
             active = false;
             clearTimeout(timer);
         };
-    }, [selected?.id, scanUtc, path, largest, search, retry]);
-    const rows = [...(result?.rows ?? [])].sort((a, b) =>
-        sort === "name"
-            ? a.name.localeCompare(b.name)
-            : (b[sort] ?? -1) - (a[sort] ?? -1),
-    );
+    }, [selected?.id, scanUtc, path, largest, search, sort, retry]);
+    const rows = result?.rows ?? [];
     const total = rows.reduce(
         (sum, r) => sum + (r.allocated ?? r.logical ?? 0),
         0,
@@ -1481,9 +1512,7 @@ function InsightsPage({
                                 onChange={(e) =>
                                     setSort(
                                         e.target.value as
-                                            | "allocated"
-                                            | "logical"
-                                            | "name",
+                                            "allocated" | "logical" | "name",
                                     )
                                 }
                             >
@@ -1705,7 +1734,7 @@ function InsightsPage({
                     )}
                     <div className="card-note">
                         {result && result.totalRows > rows.length
-                            ? `Showing the largest ${rows.length} of ${result.totalRows} matching items.`
+                            ? `Showing ${rows.length} of ${result.totalRows} matching items in the selected order. Narrow your search to see other items.`
                             : "Open a folder to browse. Select compressed files to restore their original size."}
                     </div>
                 </>
@@ -1837,7 +1866,13 @@ function ActivityPage({
                                             <AlertCircle size={13} />
                                         ) : j.state === "Succeeded" ? (
                                             <Check size={13} />
-                                        ) : null}
+                                        ) : j.state === "Running" ? (
+                                            <Activity size={13} />
+                                        ) : j.pending ? (
+                                            <Clock3 size={13} />
+                                        ) : (
+                                            <CircleMinus size={13} />
+                                        )}
                                         {j.stateText}
                                     </span>
                                     <small>{j.action}</small>
@@ -1887,6 +1922,9 @@ function ActivityPage({
                                             onClick={() => void reveal(j.id)}
                                         >
                                             <Folder size={16} />
+                                            <span className="reveal-label">
+                                                Show
+                                            </span>
                                         </button>
                                         {["Failed", "Skipped"].includes(
                                             j.state,
@@ -2041,10 +2079,14 @@ function PolicyDialog({
     useEffect(() => {
         const previous = document.activeElement as HTMLElement | null;
         const element = dialog.current!;
+        const root = document.documentElement;
+        const overflow = root.style.overflow;
+        root.style.overflow = "hidden";
         element.showModal();
         return () => {
+            root.style.overflow = overflow;
             element.close();
-            previous?.focus();
+            previous?.focus({ preventScroll: true });
         };
     }, []);
     useEffect(() => {
@@ -2070,15 +2112,29 @@ function PolicyDialog({
         !errors.maximumBytes &&
         Number(numbers.minimumBytes) * 1024 >
             Number(numbers.maximumBytes) * 1048576
-    )
-        errors.minimumBytes =
-            "Minimum file size must not exceed maximum file size.";
+    ) {
+        const key = touched.maximumBytes ? "maximumBytes" : "minimumBytes";
+        errors[key] = "Minimum file size must not exceed maximum file size.";
+    }
     if (limited && policy.startHour === policy.endHour)
         errors.schedule =
             "Choose different start and end times, or select Any time.";
     const issueCount = Object.keys(errors).filter(
         (key) => submitted || touched[key],
     ).length;
+    const revealInvalid = () => {
+        setAdvanced(true);
+        requestAnimationFrame(() => {
+            const invalid = dialog.current?.querySelector<HTMLElement>(
+                '[aria-invalid="true"]',
+            );
+            invalid?.focus({ preventScroll: true });
+            (
+                invalid?.closest(".number-field") ??
+                invalid?.closest(".settings-group")
+            )?.scrollIntoView({ block: "center" });
+        });
+    };
     function field(key: NumberKey) {
         const f = numberFields.find((f) => f.key === key)!;
         const invalid = Boolean(errors[key] && (submitted || touched[key]));
@@ -2125,19 +2181,7 @@ function PolicyDialog({
                     e.preventDefault();
                     setSubmitted(true);
                     if (Object.keys(errors).length) {
-                        setAdvanced(true);
-                        setTimeout(() => {
-                            const invalid =
-                                dialog.current?.querySelector<HTMLInputElement>(
-                                    '[aria-invalid="true"]',
-                                );
-                            invalid?.focus({ preventScroll: true });
-                            // Reveal the explanation as well as the input inside the scrolling body.
-                            (
-                                invalid?.closest(".number-field") ??
-                                invalid?.closest(".settings-group")
-                            )?.scrollIntoView({ block: "center" });
-                        }, 0);
+                        revealInvalid();
                         return;
                     }
                     const numeric = Object.fromEntries(
@@ -2319,17 +2363,25 @@ function PolicyDialog({
                                                     }
                                                     aria-invalid={
                                                         errors.schedule &&
-                                                        submitted
+                                                        (submitted ||
+                                                            touched.schedule)
                                                             ? true
                                                             : undefined
                                                     }
                                                     aria-describedby={
                                                         errors.schedule &&
-                                                        submitted
+                                                        (submitted ||
+                                                            touched.schedule)
                                                             ? "schedule-hint schedule-error"
                                                             : "schedule-hint"
                                                     }
                                                     value={policy[key]}
+                                                    onBlur={() =>
+                                                        setTouched((t) => ({
+                                                            ...t,
+                                                            schedule: true,
+                                                        }))
+                                                    }
                                                     onChange={(e) =>
                                                         set(
                                                             key,
@@ -2365,15 +2417,16 @@ function PolicyDialog({
                                     Uses your PC’s local time. Overnight
                                     schedules are supported.
                                 </p>
-                                {errors.schedule && submitted && (
-                                    <span
-                                        className="field-error"
-                                        id="schedule-error"
-                                    >
-                                        <AlertCircle size={15} />
-                                        <span>{errors.schedule}</span>
-                                    </span>
-                                )}
+                                {errors.schedule &&
+                                    (submitted || touched.schedule) && (
+                                        <span
+                                            className="field-error"
+                                            id="schedule-error"
+                                        >
+                                            <AlertCircle size={15} />
+                                            <span>{errors.schedule}</span>
+                                        </span>
+                                    )}
                             </section>
                             <section className="settings-group">
                                 <h3>Files and folders to skip</h3>
@@ -2408,15 +2461,21 @@ function PolicyDialog({
                 <div className="dialog-actions">
                     <div className="dialog-footer-info">
                         {issueCount > 0 && (
-                            <div className="settings-issues" role="status">
-                                <AlertCircle size={16} />
-                                <span>
-                                    {issueCount}{" "}
-                                    {issueCount === 1
-                                        ? "setting needs"
-                                        : "settings need"}{" "}
-                                    attention
-                                </span>
+                            <div role="status">
+                                <button
+                                    type="button"
+                                    className="settings-issues"
+                                    onClick={revealInvalid}
+                                >
+                                    <AlertCircle size={16} />
+                                    <span>
+                                        {issueCount}{" "}
+                                        {issueCount === 1
+                                            ? "setting needs"
+                                            : "settings need"}{" "}
+                                        attention
+                                    </span>
+                                </button>
                             </div>
                         )}
                         {(scroll.above || scroll.below) && (

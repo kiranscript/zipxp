@@ -11,6 +11,7 @@ foreach ($mode in @('React', 'Native')) {
     $start.FileName = (Get-Command $Dotnet).Source
     $start.UseShellExecute = $false
     $start.CreateNoWindow = $true
+    $start.RedirectStandardError = $true
     $quitFile = Join-Path $state ('quit-' + $mode)
     $start.Arguments = '"' + $dll + '" --data-dir "' + $state + '" --launch-check --quit-file "' + $quitFile + '"'
     if ($mode -eq 'Native') { $start.Arguments += ' --native-ui' }
@@ -23,7 +24,10 @@ foreach ($mode in @('React', 'Native')) {
             if ($app.HasExited -or $app.MainWindowHandle -ne 0) { break }
             Start-Sleep -Milliseconds 100
         } while ([DateTime]::UtcNow -lt $deadline)
-        if ($app.HasExited -or $app.MainWindowHandle -eq 0 -or $app.MainWindowTitle -notlike 'ZipXP*') { throw 'ZipXP window was not found.' }
+        if ($app.HasExited -or $app.MainWindowHandle -eq 0 -or $app.MainWindowTitle -notlike 'ZipXP*') {
+            $detail = if ($app.HasExited) { $app.StandardError.ReadToEnd() } else { 'Title: ' + $app.MainWindowTitle }
+            throw ('ZipXP window was not found. ' + $detail)
+        }
         Write-Host "PASS: $mode desktop dashboard launched: $($app.MainWindowTitle)"
         Add-Type -AssemblyName UIAutomationClient
         Add-Type -AssemblyName UIAutomationTypes

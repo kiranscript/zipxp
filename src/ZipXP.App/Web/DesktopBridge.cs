@@ -120,12 +120,13 @@ internal sealed class DesktopBridge(Window owner)
             {
                 var directory = e.File?.Directory == true;
                 var total = totals.GetValueOrDefault(e.Path);
-                return new { e.Path, e.Name, Directory = directory, Logical = directory ? total.Logical : e.File?.Logical,
-                    Allocated = directory ? total.Unknown == 0 ? (long?)total.Allocated : null : e.File?.Allocated,
-                    Compressed = e.File?.Compressed == true,
-                    Notes = Plain.Message(e.Reason) + (directory && total.Unknown > 0 ? $" · {total.Unknown} items inside couldn't be measured" : "") };
-            }).OrderByDescending(e => e.Allocated ?? e.Logical ?? -1).ToArray();
-        return new { Path = path, Parent = string.Equals(path, root.Path, StringComparison.OrdinalIgnoreCase) ? null : Path.GetDirectoryName(path), Rows = rows.Take(500), TotalRows = rows.Length };
+                return new StorageItem(e.Path, e.Name, directory, directory ? total.Logical : e.File?.Logical,
+                    directory ? total.Unknown == 0 ? (long?)total.Allocated : null : e.File?.Allocated,
+                    e.File?.Compressed == true,
+                    Plain.Message(e.Reason) + (directory && total.Unknown > 0 ? $" · {total.Unknown} items inside couldn't be measured" : ""));
+            });
+        var page = StorageInsights.CreatePage(rows, Text(args, "sort"));
+        return new { Path = path, Parent = string.Equals(path, root.Path, StringComparison.OrdinalIgnoreCase) ? null : Path.GetDirectoryName(path), page.Rows, page.TotalRows };
     }
 
     private string Queued(int count) => $"{count} items queued." + (Engine.Paused ? " Choose Resume all to start." : " See Activity for progress.");
