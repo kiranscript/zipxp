@@ -1084,6 +1084,19 @@ test("high-contrast navigation keeps selection and keyboard focus distinct on ev
         ).not.toBe(
             await inactive.evaluate((el) => getComputedStyle(el).borderColor),
         );
+        const activity = nav(page, "Activity");
+        const badge = activity.locator(".badge");
+        expect(
+            await badge.evaluate((el) => getComputedStyle(el).backgroundColor),
+        ).toBe(
+            await activity.evaluate(
+                (el) => getComputedStyle(el).backgroundColor,
+            ),
+        );
+        expect(await badge.evaluate((el) => getComputedStyle(el).color)).toBe(
+            await activity.evaluate((el) => getComputedStyle(el).color),
+        );
+        await expect(badge).toHaveCSS("border-width", "1px");
         if (name === "Storage insights")
             await expect(
                 page.getByRole("button", { name: "Client projects" }),
