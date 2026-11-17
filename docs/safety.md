@@ -24,6 +24,3 @@ After a crash, previously running jobs become retry records and actual state/ide
 
 To back up the policy/history database, exit the tray worker normally and copy the state directory. Keep a backup before replacing a release with an older version; newer schema versions are rejected. Removing the database removes policies/history, not file contents or their native compression state.
 
-## Known issues
-
-After decompression, allocation can be measured before the file handle is closed, which overstates growth for some file sizes and can show a small negative savings total. Files themselves are unaffected. Tracked in [#2](https://github.com/kiranscript/zipxp/issues/2); see [validation](validation.md).

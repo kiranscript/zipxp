@@ -4,8 +4,8 @@ All notable changes to ZipXP are recorded here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
-### Known issues
-- After decompression, the measured allocation can be read before the file handle is closed, which overstates growth for some non-aligned file sizes and can show a small negative savings total. Tracked in [#2](https://github.com/kiranscript/zipxp/issues/2); details in [docs/validation.md](docs/validation.md).
+### Fixed
+- Allocation after a compress or decompress operation is now measured after the mutation handle is closed, so savings and the daily ledger are correct for non-aligned file sizes ([#2](https://github.com/kiranscript/zipxp/issues/2)).
 
 ### Changed
 - Repository reorganised into `src/`, `tests/`, `scripts/` and `docs/`; projects renamed from `StorageManager.*` to `ZipXP.*`.

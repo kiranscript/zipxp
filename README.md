@@ -50,7 +50,7 @@ Storage insights shows which folders take the room and what was saved in each:
   <img src="assets/screenshots/storage-insights.png" alt="ZipXP storage insights by folder" width="760">
 </p>
 
-Compression savings depend entirely on what is in the folder. One known accounting issue (see [validation](docs/validation.md)) can overstate how much space is freed after restoring some files. Text, source code, documents and logs shrink well; photos, video and archives are already compressed and barely change. ZipXP measures the real result per file and skips files that don't benefit.
+Compression savings depend entirely on what is in the folder. Text, source code, documents and logs shrink well; photos, video and archives are already compressed and barely change. ZipXP measures the real result per file and skips files that don't benefit.
 
 ## Documentation
 
@@ -61,7 +61,7 @@ Compression savings depend entirely on what is in the folder. One known accounti
 | [Safety, limits and recovery](docs/safety.md) | What ZipXP won't touch, filesystem limits, backups and crash recovery |
 | [Install and uninstall](docs/install.md) | Build a package, install per user, remove cleanly |
 | [Development](docs/development.md) | Source layout, WSL launcher, running the checks |
-| [Validation record](docs/validation.md) | What has been tested, known issues, what is still missing |
+| [Validation record](docs/validation.md) | What has been tested and what is still missing |
 
 ## Project layout
 
