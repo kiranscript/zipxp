@@ -300,9 +300,9 @@ code, kbd, pre { font-family: var(--mono); }
 .gate .gt span { display: block; font-size: 13px; color: var(--muted); line-height: 1.4; }
 .switch { position: relative; width: 42px; height: 24px; flex: none; }
 .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
-.switch i { position: absolute; inset: 0; border-radius: 99px; background: #d6dce7; transition: background .2s; pointer-events: none; }
-.switch i::after { content: ""; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .25s var(--ease); }
-.switch input:checked + i { background: var(--amber); }
+.switch i { position: absolute; inset: 0; border-radius: 99px; background: #8a8f98; transition: background .2s; pointer-events: none; }
+.switch i::after { content: ""; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.18), 0 1px 3px rgba(0,0,0,.25); transition: transform .25s var(--ease); }
+.switch input:checked + i { background: #a35d00; }
 .switch input:checked + i::after { transform: translateX(18px); }
 .switch input:focus-visible + i { outline: 2px solid var(--accent); outline-offset: 2px; }
 .gate.is-active { border-color: #f6d19a; background: #fffaf1; }
@@ -446,7 +446,7 @@ code, kbd, pre { font-family: var(--mono); }
 .footer { background: var(--bg-soft); padding: 72px 0 40px; border-top: 1px solid var(--line-2); font-size: 14.5px; }
 .footer__grid { display: grid; grid-template-columns: 1.6fr repeat(3, 1fr); gap: 32px; }
 @media (max-width: 760px) { .footer__grid { grid-template-columns: 1fr 1fr; } .footer__grid > :first-child { grid-column: 1 / -1; } }
-.footer h5 { margin: 0 0 14px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink); }
+.footer h2 { margin: 0 0 14px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink); }
 .footer ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
 .footer a { color: var(--body); }
 .footer a:hover { color: var(--accent-ink); }
@@ -463,7 +463,7 @@ code, kbd, pre { font-family: var(--mono); }
 .docs { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 56px; padding-block: 56px 100px; }
 @media (max-width: 900px) { .docs { grid-template-columns: minmax(0, 1fr); gap: 24px; } }
 .docs__nav { position: sticky; top: 90px; align-self: start; font-size: 14.5px; }
-.docs__nav h6 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.docs__nav h2 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
 .docs__nav ol { list-style: none; padding: 0; margin: 0; display: grid; gap: 2px; border-left: 1px solid var(--line); }
 .docs__nav a { display: block; padding: 6px 14px; margin-left: -1px; border-left: 2px solid transparent; color: var(--body); font-weight: 500; }
 .docs__nav a:hover { color: var(--ink); }
@@ -476,7 +476,7 @@ code, kbd, pre { font-family: var(--mono); }
 .prose p, .prose ul, .prose ol { margin: 0 0 14px; }
 .prose ul, .prose ol { padding-left: 22px; }
 .prose li { margin-bottom: 7px; }
-.prose li::marker { color: var(--accent); }
+.prose li::marker { color: var(--body); }
 .prose strong { color: var(--ink); }
 .prose :not(pre) > code { font-size: .88em; background: var(--bg-soft); border: 1px solid var(--line-2); padding: 1px 6px; border-radius: 6px; color: var(--ink); word-break: break-word; }
 .prose pre { position: relative; background: #071428; color: #d1d1d1; border-radius: 12px; padding: 18px 20px; font-size: 13.5px; line-height: 1.7; overflow-x: auto; margin: 0 0 18px; }
@@ -508,7 +508,7 @@ code, kbd, pre { font-family: var(--mono); }
 .todo { margin-top: 56px; padding: 28px 30px; border-radius: 18px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); position: relative; z-index: 1; }
 .todo h3 { font-size: 20px; }
 .todo ul { margin: 14px 0 16px; padding-left: 20px; display: grid; gap: 6px; font-size: 15px; }
-.todo li::marker { color: #8ab4ff; }
+.todo li::marker { color: #bdbdbd; }
 .todo a { color: #fff; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .todo a:hover { color: #cfe0ff; }
 .callout a, .note a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
