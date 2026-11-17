@@ -2,5 +2,4 @@
 **/obj/
 .vs/
 *.user
-gui/artifacts/
-storage-manager/artifacts/
+artifacts/
