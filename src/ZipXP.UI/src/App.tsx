@@ -43,6 +43,7 @@ import { connected, request } from "./bridge";
 import type {
     Folder as ManagedFolder,
     Insights,
+    Insight,
     Policy,
     Snapshot,
     Job,
@@ -118,7 +119,18 @@ export function bytes(value: number | null | undefined): string {
         size /= 1024;
         unit++;
     }
-    return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: unit ? 1 : 0 }).format(size)} ${units[unit]}`;
+    return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: unit ? 1 : 0 }).format(size)} ${unit === 0 && Math.abs(value) === 1 ? "byte" : units[unit]}`;
+}
+function storageStatus(row: Insight): string {
+    if (row.directory) return row.notes || "Folder";
+    const state = row.compressed
+        ? "Compressed"
+        : row.logical == null
+          ? "Compression state unavailable"
+          : "Not compressed";
+    return row.notes && !(row.compressed && row.notes === "Already compressed")
+        ? `${state} · ${row.notes}`
+        : state;
 }
 function when(value: string): string {
     const date = new Date(value);
@@ -1357,10 +1369,7 @@ function InsightsPage({
         };
     }, [selected?.id, scanUtc, path, largest, search, sort, retry]);
     const rows = result?.rows ?? [];
-    const total = rows.reduce(
-        (sum, r) => sum + (r.allocated ?? r.logical ?? 0),
-        0,
-    );
+    const total = rows.reduce((sum, r) => sum + (r.allocated ?? 0), 0);
     const selectable = rows
         .filter((r) => !r.directory && r.compressed)
         .map((r) => r.path);
@@ -1580,7 +1589,11 @@ function InsightsPage({
                                         )}
                                     </th>
                                     <th scope="col">Name</th>
-                                    <th scope="col">Share</th>
+                                    <th scope="col">
+                                        Share of
+                                        <br />
+                                        shown items
+                                    </th>
                                     <th scope="col" className="number">
                                         Original size
                                     </th>
@@ -1650,37 +1663,35 @@ function InsightsPage({
                                             )}
                                             <small className="compact-insight-meta">
                                                 Original {bytes(r.logical)} ·{" "}
-                                                {r.notes ||
-                                                    (r.directory
-                                                        ? "Folder"
-                                                        : "Not compressed")}
+                                                {storageStatus(r)}
                                             </small>
                                         </td>
                                         <td>
-                                            <div className="share">
-                                                <Meter
-                                                    value={
-                                                        total
-                                                            ? (r.allocated ??
-                                                                  r.logical ??
-                                                                  0) / total
-                                                            : 0
-                                                    }
-                                                    label={`Share for ${r.name}`}
-                                                />
-                                                <span>
-                                                    {Math.round(
-                                                        total
-                                                            ? ((r.allocated ??
-                                                                  r.logical ??
-                                                                  0) /
-                                                                  total) *
-                                                                  100
-                                                            : 0,
-                                                    )}
-                                                    %
-                                                </span>
-                                            </div>
+                                            {r.allocated == null ? (
+                                                "—"
+                                            ) : (
+                                                <div className="share">
+                                                    <Meter
+                                                        value={
+                                                            total
+                                                                ? r.allocated /
+                                                                  total
+                                                                : 0
+                                                        }
+                                                        label={`Share of displayed measured space for ${r.name}`}
+                                                    />
+                                                    <span>
+                                                        {Math.round(
+                                                            total
+                                                                ? (r.allocated /
+                                                                      total) *
+                                                                      100
+                                                                : 0,
+                                                        )}
+                                                        %
+                                                    </span>
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="number">
                                             {bytes(r.logical)}
@@ -1701,10 +1712,7 @@ function InsightsPage({
                                                 : "—"}
                                         </td>
                                         <td className="notes">
-                                            {r.notes ||
-                                                (r.directory
-                                                    ? "Folder"
-                                                    : "Not compressed")}
+                                            {storageStatus(r)}
                                         </td>
                                     </tr>
                                 ))}
@@ -1734,7 +1742,7 @@ function InsightsPage({
                     )}
                     <div className="card-note">
                         {result && result.totalRows > rows.length
-                            ? `Showing ${rows.length} of ${result.totalRows} matching items in the selected order. Narrow your search to see other items.`
+                            ? `Showing ${rows.length.toLocaleString()} of ${result.totalRows.toLocaleString()} matching items in the selected order. Narrow your search to see other items.`
                             : "Open a folder to browse. Select compressed files to restore their original size."}
                     </div>
                 </>
@@ -1838,7 +1846,7 @@ function ActivityPage({
                     <thead>
                         <tr>
                             <th scope="col">When</th>
-                            <th scope="col">Action / result</th>
+                            <th scope="col">Result</th>
                             <th scope="col">File</th>
                             <th scope="col" className="number">
                                 Space change

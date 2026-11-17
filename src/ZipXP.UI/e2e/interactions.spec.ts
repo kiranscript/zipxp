@@ -822,6 +822,14 @@ test("modal backdrop covers the scrollbar gutter and forced-color primaries use 
 }) => {
     await openApp(page);
     await nav(page, "Managed folders").click();
+    const headerAction = page.getByRole("button", {
+        name: "Add folder",
+        exact: true,
+    });
+    const before = await headerAction.boundingBox();
+    const contentWidth = await page.evaluate(
+        () => document.documentElement.clientWidth,
+    );
     await page
         .getByRole("button", { name: "Settings for Work projects" })
         .click();
@@ -829,10 +837,11 @@ test("modal backdrop covers the scrollbar gutter and forced-color primaries use 
         .getByRole("dialog")
         .evaluate((el) => el.getBoundingClientRect().height);
     expect(modalHeight).toBeLessThan(900 * 0.75);
-    await expect(page.locator("html")).toHaveCSS("scrollbar-gutter", "auto");
+    await expect(page.locator("html")).toHaveCSS("scrollbar-gutter", "stable");
     expect(
         await page.evaluate(() => document.documentElement.clientWidth),
-    ).toBe(1280);
+    ).toBe(contentWidth);
+    expect(await headerAction.boundingBox()).toEqual(before);
     // This five-pixel crop records the previously uncovered scrollbar gutter.
     await page.screenshot({
         path: `${artifacts}/modal-right-edge.png`,
@@ -893,4 +902,78 @@ test("modal backdrop covers the scrollbar gutter and forced-color primaries use 
             path: `${artifacts}/high-contrast-${name.toLowerCase().replaceAll(" ", "-")}.png`,
         });
     }
+});
+
+test("forced-colors view selection remains visible after focus moves away", async ({
+    page,
+}) => {
+    await page.emulateMedia({ forcedColors: "active" });
+    await openApp(page);
+    await nav(page, "Storage insights").click();
+    for (const [name, file] of [
+        ["By folder", "by-folder"],
+        ["Largest files", "largest-files"],
+    ]) {
+        const selected = page.getByRole("button", { name, exact: true });
+        await selected.click();
+        await page.getByRole("textbox", { name: "Search files" }).focus();
+        await expect(selected).not.toBeFocused();
+        await expect(selected).toHaveAttribute("aria-pressed", "true");
+        await expect(selected).toHaveCSS("border-width", "2px");
+        const unselected = page.locator(
+            '.segmented button[aria-pressed="false"]',
+        );
+        expect(
+            await selected.evaluate((el) => getComputedStyle(el).borderColor),
+        ).not.toBe(
+            await unselected.evaluate((el) => getComputedStyle(el).borderColor),
+        );
+        expect(
+            await selected.evaluate(
+                (el) => getComputedStyle(el).backgroundColor,
+            ),
+        ).toBe(
+            await unselected.evaluate(
+                (el) => getComputedStyle(el).backgroundColor,
+            ),
+        );
+        expect(
+            await selected.evaluate((el) => getComputedStyle(el).color),
+        ).toBe(await unselected.evaluate((el) => getComputedStyle(el).color));
+        await expect(
+            page.getByText("Loading files…", { exact: true }),
+        ).toHaveCount(0);
+        await page.screenshot({
+            path: `${artifacts}/high-contrast-${file}.png`,
+        });
+        await page.keyboard.press("Shift+Tab");
+        if (name === "By folder") await page.keyboard.press("Shift+Tab");
+        await expect(selected).toBeFocused();
+        await expect(selected).toHaveCSS("outline-width", "3px");
+        await expect(selected).toHaveCSS("outline-offset", "3px");
+    }
+});
+
+test("storage status preserves compression state alongside the eligibility reason", async ({
+    page,
+}) => {
+    await openApp(page, { uncompressedRow: true });
+    await nav(page, "Storage insights").click();
+    const compressed = page
+        .locator(".insights-table tbody tr")
+        .filter({ hasText: "application.log" });
+    await expect(compressed.locator("td.notes")).toHaveText(
+        "Compressed · Too small to be worth compressing",
+    );
+    await expect(compressed.getByRole("checkbox")).toBeEnabled();
+    const uncompressed = page
+        .locator(".insights-table tbody tr")
+        .filter({ hasText: "notes.md" });
+    await expect(uncompressed.locator("td.notes")).toHaveText(
+        "Not compressed · Can be compressed",
+    );
+    await expect(uncompressed.getByRole("checkbox")).toHaveCount(0);
+    await page.screenshot({
+        path: `${artifacts}/compression-and-eligibility.png`,
+    });
 });

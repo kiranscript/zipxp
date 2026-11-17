@@ -5,6 +5,7 @@ import { snapshot, insights } from "./fixtures";
 export interface Scenario {
     folderCount?: number;
     longNames?: boolean;
+    uncompressedRow?: boolean;
     manyInsights?: boolean;
     pendingJobs?: boolean;
     empty?: boolean;
@@ -51,6 +52,10 @@ export async function openApp(page: Page, scenario: Scenario = {}) {
                                   path: `C:\\Users\\Kiran\\Archive ${i + 1}`,
                               },
                 );
+            }
+            if (scenario.uncompressedRow) {
+                insights.rows[4].compressed = false;
+                insights.rows[4].notes = "Can be compressed";
             }
             if (scenario.longNames) {
                 snapshot.folders[0].name =

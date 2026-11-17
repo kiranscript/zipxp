@@ -83,6 +83,11 @@ export const insights: Insights = {
         logical: (2 - i * 0.35) * gb,
         allocated: (1.4 - i * 0.25) * gb,
         compressed: i >= 2,
-        notes: i >= 2 ? "Compressed" : "",
+        notes:
+            i === 2
+                ? "Already compressed"
+                : i === 3
+                  ? "Too small to be worth compressing"
+                  : "",
     })),
 };

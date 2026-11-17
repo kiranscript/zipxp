@@ -19,7 +19,7 @@ Runtime testing found and fixed a launch-check assumption about console-host `Wa
 ## React desktop UI verification (2026-11-17)
 
 - React production build and Windows desktop build: passed; Windows build has zero warnings/errors.
-- 10 frontend unit tests, 27 browser interaction/audit tests, and 71 Windows core checks: passed. The core suite includes sorting more than 500 storage items before limiting the response.
+- 10 frontend unit tests, 29 browser interaction/audit tests, and 71 Windows core checks: passed. The core suite includes sorting more than 500 storage items before limiting the response.
 - Twelve saved accessibility reports (six WCAG audits and six explicit label-in-name audits): zero detected violations.
 - Browser regressions cover compact 900px layouts, long folder names, persistent settings actions and validation, background scroll containment, full-width modal dimming, and system-colored primary buttons. Review captures use viewport dimensions and include all main pages in forced-colors emulation.
 - Windows UI Automation: both React/WebView2 and native fallback launched, navigated all four pages, preserved analysis-only file attributes, and quit gracefully. A duplicate WPF resource inherited during the merge was found by the launch check and removed. The host reported 120 DPI (125% scaling); the locked Windows desktop prevented useful visual captures, so those captures were discarded.
