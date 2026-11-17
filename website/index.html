@@ -11,6 +11,7 @@
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://kiranscript.github.io/zipxp/assets/social-preview.png">
   <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://kiranscript.github.io/zipxp/">
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -95,7 +96,7 @@
 <section class="hero">
   <div class="hero__bg" aria-hidden="true">
     <div class="fallback"></div>
-    <canvas data-gradient data-colors="#2f7df6,#4cc2ff,#9b8cff,#ffc56b,#7fb2ff"></canvas>
+    <canvas data-gradient data-colors="#2f7df6,#4cc2ff,#8b9cff,#9fe8ff,#6ea4ff"></canvas>
   </div>
   <div class="container hero__inner">
     <div>
@@ -304,7 +305,7 @@
           </label>
           <label class="gate">
             <span class="gi"><svg><use href="#i-disk"/></svg></span>
-            <span class="gt"><b>Free space below reserve</b><span>At least 256 MiB is always kept free</span></span>
+            <span class="gt"><b>Free space below reserve</b><span>Keeps a reserve of at least 256 MiB</span></span>
             <span class="switch"><input type="checkbox" data-gate="space" aria-label="Free space below reserve"><i></i></span>
           </label>
           <label class="gate">
@@ -314,11 +315,11 @@
           </label>
         </div>
       </div>
-      <div class="panel worker reveal" style="--d:.1s" aria-live="polite">
+      <div class="panel worker reveal" style="--d:.1s">
         <h3>Background worker</h3>
         <div class="worker__status">
           <span class="orb" aria-hidden="true"></span>
-          <div><b id="worker-title">Running</b><span id="worker-sub">One file at a time, below-normal priority.</span></div>
+          <div aria-live="polite"><b id="worker-title">Running</b><span id="worker-sub">One file at a time, below-normal priority.</span></div>
         </div>
         <div class="wq" aria-hidden="true">
           <div class="wq__row"><span></span><em></em><i class="prog"></i></div>
@@ -340,16 +341,16 @@
   <div class="guides" aria-hidden="true"><div class="container"><span></span><span></span><span></span><span></span></div></div>
   <div class="container">
     <div class="section-head reveal">
-      <span class="eyebrow">Engineered for the paranoid</span>
+      <span class="eyebrow">Careful by default</span>
       <h2 class="h-xl">Every file passes five steps, start to finish.</h2>
-      <p class="lede">Compression is a filesystem attribute, not a rewrite into some other format. ZipXP still treats every operation as risky: it pins the file, proves the file is the same one it scanned, and checks the result.</p>
+      <p class="lede">Compression is a filesystem attribute, not a rewrite into some other format. ZipXP still treats every operation as risky: it pins the file, proves the file is the same one it scanned, and checks the result. That makes races much less likely, but it isn't a guarantee against every concurrent change, so start with copies.</p>
     </div>
     <div class="pipeline" id="pipeline">
-      <div class="pstage"><span class="pn">01</span><div class="pic"><svg><use href="#i-lock"/></svg></div><h4>Pin the handle</h4><p>Open one handle to the original with no write or delete sharing.</p></div>
-      <div class="pstage"><span class="pn">02</span><div class="pic"><svg><use href="#i-id"/></svg></div><h4>Prove identity</h4><p>Resolved path and stable <code>FILE_ID_INFO</code> must match the scan.</p></div>
-      <div class="pstage"><span class="pn">03</span><div class="pic"><svg><use href="#i-check"/></svg></div><h4>Validate metadata</h4><p>Length and last-write time are re-checked fresh. Changed files wait for a rescan.</p></div>
-      <div class="pstage"><span class="pn">04</span><div class="pic"><svg><use href="#i-compress"/></svg></div><h4>Compress natively</h4><p><code>FSCTL_SET_COMPRESSION</code> on that same handle. One file at a time.</p></div>
-      <div class="pstage"><span class="pn">05</span><div class="pic"><svg><use href="#i-measure"/></svg></div><h4>Read it back</h4><p>Actual state and allocation are read from the handle and written to the ledger exactly once.</p></div>
+      <div class="pstage"><span class="pn">01</span><div class="pic"><svg><use href="#i-lock"/></svg></div><h3>Pin the handle</h3><p>Open one handle to the original with no write or delete sharing.</p></div>
+      <div class="pstage"><span class="pn">02</span><div class="pic"><svg><use href="#i-id"/></svg></div><h3>Prove identity</h3><p>Resolved path and stable <code>FILE_ID_INFO</code> must match the scan.</p></div>
+      <div class="pstage"><span class="pn">03</span><div class="pic"><svg><use href="#i-check"/></svg></div><h3>Validate metadata</h3><p>Length and last-write time are re-checked fresh. Changed files wait for a rescan.</p></div>
+      <div class="pstage"><span class="pn">04</span><div class="pic"><svg><use href="#i-compress"/></svg></div><h3>Compress natively</h3><p><code>FSCTL_SET_COMPRESSION</code> on that same handle. One file at a time.</p></div>
+      <div class="pstage"><span class="pn">05</span><div class="pic"><svg><use href="#i-measure"/></svg></div><h3>Read it back</h3><p>Actual state and allocation are read from the handle and written to the ledger exactly once.</p></div>
     </div>
 
     <div class="excl">
@@ -365,6 +366,18 @@
         </div>
       </div>
     </div>
+
+    <div class="todo reveal">
+      <h3>Still to do before 1.0</h3>
+      <ul>
+        <li>Compatibility testing across cluster sizes, hardware, permissions, antivirus and backup tools</li>
+        <li>Repeated CPU, I/O and open/save latency measurements on real workloads</li>
+        <li>A release signing certificate and a signed, timestamped package</li>
+        <li>Sign-out, restart and sign-in checks of the optional startup entry</li>
+        <li>A real user pilot, an accessibility review, and install/update recovery on more machines</li>
+      </ul>
+      <a href="https://github.com/kiranscript/zipxp/blob/main/docs/validation.md">Read the validation record →</a>
+    </div>
   </div>
 </section>
 
@@ -378,14 +391,14 @@
       <p class="lede">Most "space saved" counters mix guesses with facts. ZipXP keeps what the drive reports, what it scanned, what it estimates, and what it actually measured in four separate places.</p>
     </div>
     <div class="acct">
-      <div class="acard reveal" style="--c:#12c2e9"><span class="ak">A</span><h4>Volume usage</h4><p>Live drive statistics. Includes activity from every other app, so it moves on its own.</p><div class="eq">DriveInfo · live, all apps</div></div>
-      <div class="acard reveal" style="--c:#1d58d8;--d:.08s"><span class="ak">B</span><h4>Managed allocation</h4><p>Primary-stream allocation from each root's latest scan, with its timestamp and how much coverage is unknown.</p><div class="eq">Σ allocated · hard links once</div></div>
-      <div class="acard reveal" style="--c:#f857a6;--d:.16s"><span class="ak">C</span><h4>Estimated opportunity</h4><p>Three 32 KiB Deflate samples per eligible file, scaled up. A heuristic, clearly labeled. Sampling never modifies anything.</p><div class="eq">3 × 32 KiB samples → scale</div></div>
-      <div class="acard reveal" style="--c:#18b67a;--d:.24s"><span class="ak">D</span><h4>Net measured reduction</h4><p>Signed difference for successful operations with stable identity. Zero is valid. Decompression is negative.</p><div class="eq">Σ (before − after) allocation</div></div>
+      <div class="acard reveal" style="--c:#12c2e9"><span class="ak">A</span><h3>Volume usage</h3><p>Live drive statistics. Includes activity from every other app, so it moves on its own.</p><div class="eq">DriveInfo · live, all apps</div></div>
+      <div class="acard reveal" style="--c:#1d58d8;--d:.08s"><span class="ak">B</span><h3>Managed allocation</h3><p>Primary-stream allocation from each root's latest scan, with its timestamp and how much coverage is unknown.</p><div class="eq">Σ allocated · hard links once</div></div>
+      <div class="acard reveal" style="--c:#6b7cff;--d:.16s"><span class="ak">C</span><h3>Estimated opportunity</h3><p>Three 32 KiB Deflate samples per eligible file, scaled up. A heuristic, clearly labeled. Sampling never modifies anything.</p><div class="eq">3 × 32 KiB samples → scale</div></div>
+      <div class="acard reveal" style="--c:#18b67a;--d:.24s"><span class="ak">D</span><h3>Net measured reduction</h3><p>Signed difference for successful operations with stable identity. Zero is valid. Decompression is negative.</p><div class="eq">Σ (before − after) allocation</div></div>
     </div>
     <div class="callout reveal">
       <svg><use href="#i-warn"/></svg>
-      <div><b>No marketing math.</b> The measured reduction is a running total of past operations. It doesn't claim that much free space exists right now, and it doesn't claim savings still remain after you delete files. Already-compressed, interrupted, or unmeasured jobs add nothing.<br><b>Known issue:</b> after a restore, growth can be measured before the file handle closes, which overstates it for some file sizes and can show a small negative total. Your files aren't affected. Tracked in <a href="https://github.com/kiranscript/zipxp/issues/2">#2</a>.</div>
+      <div><b>No marketing math.</b> The measured reduction is a running total of past operations. It doesn't claim that much free space exists right now, and it doesn't claim savings still remain after you delete files. Already-compressed, interrupted, or unmeasured jobs add nothing.<br><b>Known issue:</b> after a restore, growth can be measured before the file handle closes, which overstates it for some file sizes and can show a small negative total. Your files aren't affected. Tracked in <a href="https://github.com/kiranscript/zipxp/issues/2">#2</a>. A fix (<a href="https://github.com/kiranscript/zipxp/pull/4">#4</a>) is merged on a branch but hasn't reached <code>main</code> yet.</div>
     </div>
   </div>
 </section>
@@ -397,7 +410,7 @@
       <div class="stat reveal"><strong data-count="68">68</strong><span>native and core checks passing on a real NTFS volume</span></div>
       <div class="stat reveal" style="--d:.08s"><strong>0</strong><span>external NuGet or UI packages. SQLite comes from Windows itself.</span></div>
       <div class="stat reveal" style="--d:.16s"><strong>1</strong><span>sequential worker per user, with no service and no elevation</span></div>
-      <div class="stat reveal" style="--d:.24s"><strong data-count="100000">100,000</strong><span>observations per managed root, with incomplete coverage clearly marked</span></div>
+      <div class="stat reveal" style="--d:.24s"><strong data-count="4">4</strong><span>app screens launched and navigated by native UI Automation in the checks</span></div>
     </div>
   </div>
 </section>
@@ -418,20 +431,20 @@
     </div>
     <div class="term reveal" style="--d:.1s" data-tabs>
       <div class="term__tabs" role="tablist" aria-label="Commands">
-        <button role="tab" aria-selected="true" aria-controls="t-wsl" id="tab-wsl">Quickstart</button>
-        <button role="tab" aria-selected="false" aria-controls="t-ps" id="tab-ps" tabindex="-1">WSL</button>
+        <button role="tab" aria-selected="true" aria-controls="t-quick" id="tab-quick">Quickstart</button>
+        <button role="tab" aria-selected="false" aria-controls="t-wsl" id="tab-wsl" tabindex="-1">WSL</button>
         <button role="tab" aria-selected="false" aria-controls="t-pub" id="tab-pub" tabindex="-1">Publish &amp; install</button>
       </div>
       <div class="term__body">
         <button class="copy" data-copy type="button">Copy</button>
-<pre role="tabpanel" id="t-wsl" aria-labelledby="tab-wsl"><span class="c"># Clone and run (Windows, .NET 10 SDK)</span>
+<pre role="tabpanel" id="t-quick" aria-labelledby="tab-quick"><span class="c"># Clone and run (Windows, .NET 10 SDK)</span>
 <span class="p">PS&gt; </span><span class="line">git clone https://github.com/kiranscript/zipxp.git</span>
 <span class="p">PS&gt; </span><span class="line">cd zipxp</span>
 <span class="p">PS&gt; </span><span class="line"><span class="k">dotnet</span> run --project src/ZipXP.App/ZipXP.App.csproj</span>
 
 <span class="c"># Run the full native + UI check harness</span>
 <span class="p">PS&gt; </span><span class="line"><span class="f">.\scripts\check.ps1</span></span></pre>
-<pre role="tabpanel" id="t-ps" aria-labelledby="tab-ps" hidden><span class="c"># Launch the native Windows app from WSL</span>
+<pre role="tabpanel" id="t-wsl" aria-labelledby="tab-wsl" hidden><span class="c"># Launch the native Windows app from WSL</span>
 <span class="p">$ </span><span class="line">./scripts/dev.sh</span>
 
 <span class="c"># Throwaway data, your real state is untouched</span>
@@ -473,8 +486,8 @@
     <div class="actions-list">
       <div class="alist reveal" style="--c:linear-gradient(135deg,#2f7df6,#1d58d8)"><span class="gi"><svg><use href="#i-undo"/></svg></span><div><b>Restore original size…</b><span>Turns off automation for that folder and cancels pending work, then decompresses. A preview shows the headroom it needs first.</span></div></div>
       <div class="alist reveal" style="--c:linear-gradient(135deg,#22c7ef,#1592c9);--d:.08s"><span class="gi"><svg><use href="#i-pause"/></svg></span><div><b>Pause all · Pause folder</b><span>Stops new operations after the current file. Your folders' Windows compression settings stay as they are.</span></div></div>
-      <div class="alist reveal" style="--c:linear-gradient(135deg,#ff7ab6,#e5438f);--d:.16s"><span class="gi"><svg><use href="#i-folder"/></svg></span><div><b>Turn off Windows' own folder compression</b><span>A separate job that clears the flags that make Windows compress new files in a folder automatically. Files already compressed stay compressed.</span></div></div>
-      <div class="alist reveal" style="--c:linear-gradient(135deg,#ffc56b,#f09a1c);--d:.24s"><span class="gi"><svg><use href="#i-unlink"/></svg></span><div><b>Stop managing this folder</b><span>Removes the root and its future jobs. Your files stay exactly as they are, and measurement history is kept.</span></div></div>
+      <div class="alist reveal" style="--c:linear-gradient(135deg,#6b7cff,#4553e0);--d:.16s"><span class="gi"><svg><use href="#i-folder"/></svg></span><div><b>Turn off Windows' own folder compression</b><span>A separate job that clears the flags that make Windows compress new files in a folder automatically. Files already compressed stay compressed.</span></div></div>
+      <div class="alist reveal" style="--c:linear-gradient(135deg,#2dd4bf,#0f9488);--d:.24s"><span class="gi"><svg><use href="#i-unlink"/></svg></span><div><b>Stop managing this folder</b><span>Removes the root and its future jobs. Your files stay exactly as they are, and measurement history is kept.</span></div></div>
     </div>
   </div>
 </section>
@@ -493,7 +506,7 @@
       </details>
       <details>
         <summary>How much space will I save?</summary>
-        <div class="ans"><p>It depends entirely on your files. Text, logs, CSVs, binaries and uncompressed images often shrink well. Videos, photos and archives usually don't, and ZipXP skips files that show poor benefit.</p><p>The in-app estimate is a heuristic from Deflate samples, but NTFS uses a different algorithm, so treat the estimate as a hint. The measured number is what counts.</p></div>
+        <div class="ans"><p>It depends entirely on what's in the folder. Text, source code, documents and logs shrink well. Photos, video and archives are already compressed and barely change, and ZipXP skips files that don't benefit.</p><p>The in-app estimate is a heuristic from Deflate samples, but NTFS uses a different algorithm, so treat the estimate as a hint. The measured number is what counts.</p></div>
       </details>
       <details>
         <summary>Will it slow down my PC?</summary>
@@ -527,7 +540,7 @@
 <section class="cta">
   <div class="cta__bg" aria-hidden="true">
     <div class="fallback"></div>
-    <canvas data-gradient data-colors="#2f7df6,#22c7ef,#ff7ab6,#ffc56b,#6ea4ff"></canvas>
+    <canvas data-gradient data-colors="#1d58d8,#22c7ef,#7b8cff,#9fe8ff,#4f8ff7"></canvas>
   </div>
   <div class="container">
     <div class="cta__card reveal">

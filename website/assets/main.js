@@ -62,7 +62,7 @@
     var files = [
       ["Projects\\assets\\atlas.psd", 18.4],
       ["Downloads\\logs\\server.log", 41.7],
-      ["Documents\\export.xlsx", 2.1],
+      ["Documents\\notes\\meeting-notes.txt", 2.1],
       ["Videos\\clip.mp4", -1],
       ["Projects\\vendor\\sdk.dll", 3.9],
       ["Downloads\\datasets\\events.csv", 26.2],

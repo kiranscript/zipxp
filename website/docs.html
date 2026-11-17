@@ -6,6 +6,12 @@
   <title>ZipXP Docs: getting started</title>
   <meta name="description" content="Install, run and use ZipXP: policies, undo, storage accounting, boundaries and recovery.">
   <meta name="theme-color" content="#0a1a33">
+  <link rel="canonical" href="https://kiranscript.github.io/zipxp/docs.html">
+  <meta property="og:title" content="ZipXP docs: getting started">
+  <meta property="og:description" content="Install, run and use ZipXP: policies, undo, storage accounting, limits and recovery.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://kiranscript.github.io/zipxp/assets/social-preview.png">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,9 +44,12 @@
     <button class="nav__menu" aria-label="Menu" aria-expanded="false" aria-controls="drawer"><span></span></button>
   </div>
   <div class="container nav__drawer" id="drawer">
-    <a href="./">Home</a>
+    <a href="./#product">Product</a>
+    <a href="./#tour">Screenshots</a>
     <a href="./#how">How it works</a>
     <a href="./#safety">Safety</a>
+    <a href="./#accounting">Accounting</a>
+    <a href="docs.html">Docs</a>
     <a href="https://github.com/kiranscript/zipxp">GitHub</a>
   </div>
 </header>
@@ -138,7 +147,7 @@
         <li>Local fixed NTFS only. ZipXP won't manage drive roots, Windows or Program Files locations, UNC or device paths, WSL filesystem roots, or paths that pass through reparse points.</li>
         <li>Hidden, system, encrypted, sparse, offline, read-only and multi-hard-link files are never changed.</li>
         <li>Manual and automatic compression has been tested on files from 64 KiB to 256 MiB.</li>
-        <li>Compression always keeps at least 256 MiB free. Decompression needs the file's full logical size plus that reserve. When space is short, the queue waits.</li>
+        <li>Compression keeps a reserve of at least 256 MiB free. Decompression needs the file's full logical size plus that reserve. When space is short, the queue waits.</li>
         <li>One file changes at a time, with a 500 ms worker interval. Each folder's scan stops at 100,000 observations and says so. Split very large folders into smaller ones that don't overlap.</li>
         <li>No deletion, deduplication, cloud or network support, WOF, archive replacement, automatic elevation, or telemetry.</li>
       </ul>
@@ -150,7 +159,7 @@
       <p>State lives in <code>%LOCALAPPDATA%\ZipXP\StorageManager\storage.sqlite3</code>, plus its SQLite WAL/SHM files. SQLite is supplied by Windows' own <code>winsqlite3.dll</code>. There are no external NuGet or UI packages.</p>
       <p>After a crash, jobs that were running become retry records, and each file's actual state and identity are checked again. Files changed while ZipXP was closed are found on startup. To back up, exit the tray worker normally and copy the state directory. Newer schema versions are rejected by older builds.</p>
       <h3>Known issues</h3>
-      <p>After a restore, the app can measure a file's allocation before its handle is closed. That overstates growth for some file sizes and can show a small negative savings total. The files themselves aren't affected. Tracked in <a href="https://github.com/kiranscript/zipxp/issues/2">#2</a>.</p>
+      <p>After a restore, the app can measure a file's allocation before its handle is closed. That overstates growth for some file sizes and can show a small negative savings total. The files themselves aren't affected. Tracked in <a href="https://github.com/kiranscript/zipxp/issues/2">#2</a>. A fix (<a href="https://github.com/kiranscript/zipxp/pull/4">#4</a>) is merged on a branch but hasn't reached <code>main</code> yet.</p>
     </section>
 
     <section id="verify">
