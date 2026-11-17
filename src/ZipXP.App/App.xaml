@@ -46,7 +46,8 @@
                 <Setter Property="Margin" Value="0,14,0,4" />
             </Style>
             <Style x:Key="StatValue" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="26" /><Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="FontSize" Value="24" /><Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="TextWrapping" Value="Wrap" />
                 <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
                 <Setter Property="Margin" Value="0,10,0,4" />
             </Style>
@@ -59,8 +60,12 @@
             <Style x:Key="Card" TargetType="Border">
                 <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
                 <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
-                <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="8" />
-                <Setter Property="Padding" Value="20" />
+                <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="12" />
+                <Setter Property="Padding" Value="24" />
+            </Style>
+            <!-- Icon inside a card's rounded tile: explicit accent colour so it is readable in light and dark. -->
+            <Style x:Key="BadgeGlyph" TargetType="TextBlock" BasedOn="{StaticResource Glyph}">
+                <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
             </Style>
             <!-- Icon inside a card's rounded tile: explicit accent colour so it is readable in light and dark. -->
             <Style x:Key="BadgeGlyph" TargetType="TextBlock" BasedOn="{StaticResource Glyph}">
@@ -81,12 +86,14 @@
                 </StackPanel>
             </DataTemplate>
             <Style x:Key="CommandButton" TargetType="local:GlyphButton" BasedOn="{StaticResource DefaultButtonStyle}">
+                <Setter Property="MinHeight" Value="38" />
                 <Setter Property="ContentTemplate" Value="{StaticResource GlyphContent}" />
-                <Setter Property="Padding" Value="12,6,14,7" /><Setter Property="Margin" Value="0,0,8,8" />
+                <Setter Property="Padding" Value="14,8,16,9" /><Setter Property="Margin" Value="0" />
             </Style>
             <Style x:Key="PrimaryButton" TargetType="local:GlyphButton" BasedOn="{StaticResource AccentButtonStyle}">
+                <Setter Property="MinHeight" Value="38" />
                 <Setter Property="ContentTemplate" Value="{StaticResource GlyphContent}" />
-                <Setter Property="Padding" Value="12,6,14,7" /><Setter Property="Margin" Value="0,0,8,8" />
+                <Setter Property="Padding" Value="14,8,16,9" /><Setter Property="Margin" Value="0" />
             </Style>
             <Style TargetType="local:GlyphButton" BasedOn="{StaticResource CommandButton}" />
             <!-- Quieter look for actions that undo or reverse work, so they don't read as equals of the main actions. -->
@@ -97,8 +104,8 @@
 
             <!-- Sidebar navigation -->
             <Style x:Key="NavButton" TargetType="local:GlyphButton">
-                <Setter Property="Background" Value="Transparent" /><Setter Property="Height" Value="40" />
-                <Setter Property="Margin" Value="0,2" /><Setter Property="FontSize" Value="14" />
+                <Setter Property="Background" Value="Transparent" /><Setter Property="Height" Value="44" />
+                <Setter Property="Margin" Value="0,3" /><Setter Property="FontSize" Value="14" />
                 <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
                 <Setter Property="FocusVisualStyle" Value="{DynamicResource DefaultControlFocusVisualStyle}" />
                 <Setter Property="Template">
@@ -143,8 +150,9 @@
                 <Setter Property="RowStyle" Value="{DynamicResource AppRow}" /><Setter Property="CellStyle" Value="{DynamicResource AppCell}" />
             </Style>
             <Style x:Key="AppHeader" TargetType="DataGridColumnHeader" BasedOn="{StaticResource DefaultDataGridColumnHeaderStyle}">
-                <Setter Property="Padding" Value="12,0" /><Setter Property="MinHeight" Value="40" />
-                <Setter Property="FontSize" Value="13" /><Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Padding" Value="12,0" /><Setter Property="MinHeight" Value="44" />
+                <Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+                <Setter Property="FontSize" Value="12" /><Setter Property="FontWeight" Value="SemiBold" />
                 <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
                 <Setter Property="HorizontalContentAlignment" Value="Left" />
                 <Setter Property="Template">
@@ -174,7 +182,7 @@
             </Style>
             <!-- Rows highlight softly with an accent marker, like lists in Windows 11, so coloured labels stay readable when selected. -->
             <Style x:Key="AppRow" TargetType="DataGridRow">
-                <Setter Property="Background" Value="Transparent" /><Setter Property="MinHeight" Value="40" />
+                <Setter Property="Background" Value="Transparent" /><Setter Property="MinHeight" Value="44" />
                 <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
                 <Setter Property="FocusVisualStyle" Value="{DynamicResource DefaultControlFocusVisualStyle}" />
                 <Setter Property="Template">
@@ -209,7 +217,7 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="DataGridCell">
-                            <Border Background="{TemplateBinding Background}" MinHeight="40">
+                            <Border Background="{TemplateBinding Background}" MinHeight="44">
                                 <ContentPresenter VerticalAlignment="Center" />
                             </Border>
                         </ControlTemplate>
