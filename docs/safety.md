@@ -26,4 +26,4 @@ To back up the policy/history database, exit the tray worker normally and copy t
 
 ## Known issues
 
-After decompression, allocation can be measured before the file handle is closed, which overstates growth for some file sizes and can show a small negative savings total. Files themselves are unaffected. See [validation](validation.md).
+After decompression, allocation can be measured before the file handle is closed, which overstates growth for some file sizes and can show a small negative savings total. Files themselves are unaffected. Tracked in [#2](https://github.com/kiranscript/zipxp/issues/2); see [validation](validation.md).

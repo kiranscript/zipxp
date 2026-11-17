@@ -19,6 +19,11 @@
 
 > **Status: pre-release (0.2).** ZipXP is under active development and the build is unsigned. Try it on a folder of copies first. See [Safety](docs/safety.md).
 
+<p align="center">
+  <img src="assets/screenshots/overview.png" alt="ZipXP overview showing 74.1 MB saved, 54% less space used" width="760">
+</p>
+<p align="center"><sub>ZipXP after compressing a sample work folder (logs, CSV, JSON and source files; photos are skipped). The sample data is generated text, so your savings will differ.</sub></p>
+
 ## Why ZipXP
 
 - **Your files stay put.** No archives, no new formats, no changed paths. Apps open compressed files as normal.
@@ -38,6 +43,12 @@ dotnet run --project src/ZipXP.App/ZipXP.App.csproj
 ```
 
 Then choose **Managed folders → Add folder…**, pick a test folder that holds copies of some documents, and read the estimate. To build a package you can install, see [Install and uninstall](docs/install.md).
+
+Storage insights shows which folders take the room and what was saved in each:
+
+<p align="center">
+  <img src="assets/screenshots/storage-insights.png" alt="ZipXP storage insights by folder" width="760">
+</p>
 
 Compression savings depend entirely on what is in the folder. One known accounting issue (see [validation](docs/validation.md)) can overstate how much space is freed after restoring some files. Text, source code, documents and logs shrink well; photos, video and archives are already compressed and barely change. ZipXP measures the real result per file and skips files that don't benefit.
 
@@ -60,7 +71,7 @@ src/ZipXP.App/    WPF dashboard and tray app
 tests/            real-filesystem checks
 scripts/          dev launcher, check, publish, install
 docs/             documentation
-assets/brand/     logo
+assets/            logo and screenshots
 ```
 
 ## Contributing

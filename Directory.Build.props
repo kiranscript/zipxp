@@ -6,8 +6,8 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Version>0.2.0</Version>
     <Product>ZipXP</Product>
-    <Authors>ZipXP contributors</Authors>
-    <Copyright>Copyright (c) 2026 ZipXP contributors</Copyright>
+    <Authors>kiran kumar</Authors>
+    <Copyright>Copyright (c) 2026 kiran kumar</Copyright>
     <Description>ZipXP: a solution to shortage of disk space. It shrinks files in place with Windows NTFS compression.</Description>
     <RepositoryUrl>https://github.com/kiranscript/zipxp</RepositoryUrl>
   </PropertyGroup>
