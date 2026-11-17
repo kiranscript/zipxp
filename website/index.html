@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZipXP: transparent NTFS compression for Windows 11</title>
+  <meta name="description" content="ZipXP quietly compresses the folders you choose with native NTFS compression. Files keep their names and paths, and restoring is built in.">
+  <meta name="theme-color" content="#0a1a33">
+  <meta property="og:title" content="ZipXP: reclaim disk space without renaming a thing">
+  <meta property="og:description" content="Policy-driven, measured, reversible NTFS compression for Windows 11. Runs quietly in the tray.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://kiranscript.github.io/zipxp/assets/social-preview.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://kiranscript.github.io/zipxp/">
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- Icon sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h3.6l2 2h7.4A2.5 2.5 0 0 1 21 9.5v8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20h16M7 16v-5M12 16V6M17 16v-8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-battery" viewBox="0 0 24 24"><rect x="3" y="7" width="16" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M21.5 10.5v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M6 10h4v4H6z" fill="currentColor"/></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9.5 3v3M14.5 3v3M9.5 18v3M14.5 18v3M3 9.5h3M3 14.5h3M18 9.5h3M18 14.5h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="9.5" y="9.5" width="5" height="5" rx="1" fill="currentColor"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-disk" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 14h17" stroke="currentColor" stroke-width="1.7"/><circle cx="16.5" cy="16.6" r="1" fill="currentColor"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M14.5 5.5l4 4L9 19H5v-4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12.5 7.5l4 4" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-id" viewBox="0 0 24 24"><path d="M12 4a7 7 0 0 0-7 7v2M19 13v-2a7 7 0 0 0-10.5-6M9 20.5c.7-1.5 1-3.4 1-5.5v-4a2 2 0 0 1 4 0v4M14 20.5c.3-.9.5-1.9.6-3M17.3 19c.4-1.4.7-3 .7-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8.3 12.3l2.5 2.5 5-5.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-compress" viewBox="0 0 24 24"><path d="M12 3v6m0 0-3-3m3 3 3-3M12 21v-6m0 0-3 3m3-3 3 3M4 12h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-measure" viewBox="0 0 24 24"><path d="M4 17l5-5 4 4 7-8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 8h5v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 7 4.5 11.5 9 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 11.5h9.5a5 5 0 0 1 0 10H11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M10 9v6M14 9v6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+    <symbol id="i-unlink" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 1 0-5.6l2.4-2.4a4 4 0 0 1 5.6 5.6l-1.2 1.2M14 10a4 4 0 0 1 0 5.6L11.6 18A4 4 0 0 1 6 12.4l1.2-1.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M4 4l16 16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M7 9.5l3 2.5-3 2.5M12.5 15h4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-package" viewBox="0 0 24 24"><path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z M4 7.5 12 12l8-4.5M12 12v9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+    <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="2.8" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M5 6v12c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6M5 12c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.5 19 6v5.5c0 4.3-2.9 7.8-7 9-4.1-1.2-7-4.7-7-9V6z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12l2.2 2.2L15.5 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 4 21 19.5H3z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4.5M12 17.2h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.5 2 2 6.6 2 12.2c0 4.5 2.9 8.3 6.8 9.7.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.4-3.4-1.4-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1.1 1.5 1.1.9 1.6 2.4 1.1 2.9.8.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.8 1a9.6 9.6 0 0 1 5 0c1.9-1.3 2.8-1 2.8-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10.2 10.2 0 0 0 22 12.2C22 6.6 17.5 2 12 2z"/></symbol>
+    <symbol id="i-win" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5.3 10.4 4.3v7.1H3zM11.4 4.1 21 2.8v8.6h-9.6zM3 12.4h7.4v7.2L3 18.6zM11.4 12.4H21v8.7l-9.6-1.3z"/></symbol>
+    <symbol id="i-net" viewBox="0 0 24 24"><path d="M9.5 6.5 6 10l3.5 3.5M14.5 10.5 18 14l-3.5 3.5M6 10h12M6 14h12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<div class="announce">
+  <span class="pill">Pre-release 0.2</span>
+  ZipXP is an unsigned build under active development. Try it on a folder of copies first.
+  <a href="docs.html#boundaries">Read the limits →</a>
+</div>
+
+<header class="nav" id="top">
+  <div class="container nav__inner">
+    <a class="brand" href="./" aria-label="ZipXP home">
+      <img src="assets/logo.svg" alt="" width="30" height="30"> ZipXP
+    </a>
+    <nav class="nav__links" aria-label="Primary">
+      <a href="#product">Product</a>
+      <a href="#tour">Screenshots</a>
+      <a href="#how">How it works</a>
+      <a href="#safety">Safety</a>
+      <a href="#accounting">Accounting</a>
+      <a href="docs.html">Docs</a>
+    </nav>
+    <div class="nav__spacer"></div>
+    <div class="nav__cta">
+      <a class="btn btn--ghost btn--sm" href="https://github.com/kiranscript/zipxp"><svg width="16" height="16"><use href="#i-github"/></svg> GitHub</a>
+      <a class="btn btn--sm" href="docs.html#quickstart">Get started <i class="arrow"></i></a>
+    </div>
+    <button class="nav__menu" aria-label="Menu" aria-expanded="false" aria-controls="drawer"><span></span></button>
+  </div>
+  <div class="container nav__drawer" id="drawer">
+    <a href="#product">Product</a>
+    <a href="#tour">Screenshots</a>
+    <a href="#how">How it works</a>
+    <a href="#safety">Safety</a>
+    <a href="#accounting">Accounting</a>
+    <a href="docs.html">Docs</a>
+    <a href="https://github.com/kiranscript/zipxp">GitHub</a>
+    <a class="btn" href="docs.html#quickstart">Get started <i class="arrow"></i></a>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ================= HERO ================= -->
+<section class="hero">
+  <div class="hero__bg" aria-hidden="true">
+    <div class="fallback"></div>
+    <canvas data-gradient data-colors="#2f7df6,#4cc2ff,#6ea4ff,#9fe8ff,#8ab4ff"></canvas>
+  </div>
+  <div class="container hero__inner">
+    <div>
+      <span class="eyebrow-chip"><b>0.2</b> The fix for a full disk, on Windows 11</span>
+      <h1>More space.<br>Same files.</h1>
+      <p class="hero__lede">
+        ZipXP shrinks the files in the folders you pick, in place, using Windows' built-in NTFS compression.
+        No archives, no renames, nothing deleted. Each successful change is measured, and <b>Restore original size</b> decompresses them again.
+      </p>
+      <div class="hero__actions">
+        <a class="btn btn--lg" href="docs.html#quickstart">Get started <i class="arrow"></i></a>
+        <a class="btn btn--lg btn--light" href="#how">See how it works</a>
+      </div>
+      <div class="hero__meta">
+        <span><svg><use href="#i-shield"/></svg> No admin rights</span>
+        <span><svg><use href="#i-db"/></svg> Zero external packages</span>
+        <span><svg><use href="#i-undo"/></svg> Restore built in</span>
+      </div>
+    </div>
+
+    <div class="mock-wrap reveal" style="--d:.15s">
+      <div class="float-card float-card--b">
+        <svg viewBox="0 0 28 28"><rect width="28" height="28" rx="8" fill="#e6f7ef"/><path d="M8.5 14.3l3.4 3.4 7.6-8" fill="none" stroke="#0f8a5c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div><b>SHA-256 unchanged</b><small>Verified by the real-NTFS checks</small></div>
+      </div>
+      <div class="float-card float-card--a">
+        <svg viewBox="0 0 28 28"><rect width="28" height="28" rx="8" fill="#e3edff"/><path d="M14 7v5m0 0-2.5-2.5M14 12l2.5-2.5M14 21v-5m0 0-2.5 2.5M14 16l2.5 2.5M8 14h12" fill="none" stroke="#1747c4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div><b>server-logs · 47.3 MB saved</b><small>62% smaller, measured per file</small></div>
+      </div>
+      <figure class="shot shot--hero">
+        <img src="assets/screenshots/overview.png" width="1600" height="1026" alt="ZipXP overview: 74.1 MB saved, files take up 54% less room, 154 GB free on drive C">
+      </figure>
+      <span class="mock-note">Real screenshot · generated sample folder</span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= STRIP ================= -->
+<section class="strip" aria-label="Built with">
+  <div class="container">
+    <p>Native to the platform. Nothing extra.</p>
+    <ul>
+      <li><svg><use href="#i-win"/></svg>Windows 11</li>
+      <li><svg><use href="#i-disk"/></svg>NTFS</li>
+      <li><svg><use href="#i-package"/></svg>.NET 10</li>
+      <li><svg><use href="#i-home"/></svg>WPF Fluent</li>
+      <li><svg><use href="#i-db"/></svg>winsqlite3</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================= PILLARS ================= -->
+<section class="section" id="product">
+  <div class="guides" aria-hidden="true"><div class="container"><span></span><span></span><span></span><span></span></div></div>
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">One app, three jobs</span>
+      <h2 class="h-xl">A storage manager that works while you don't.</h2>
+      <p class="lede">Find out where the space went, decide which folders ZipXP may touch, and let a single, polite background worker handle the rest. You get the measured results.</p>
+    </div>
+    <div class="pillars">
+      <article class="pillar reveal">
+        <div class="pillar__art" aria-hidden="true">
+          <div class="treemap">
+            <div class="t1">Projects<small>38.2 GiB</small></div>
+            <div class="t2">Downloads<small>14.9 GiB</small></div>
+            <div class="t3">Footage<small>11.4 GiB</small></div>
+            <div class="t4">Logs<small>6.1 GiB</small></div>
+            <div class="t5">Other<small>3.8 GiB</small></div>
+          </div>
+        </div>
+        <div class="pillar__body">
+          <span class="num">01 · Analyze</span>
+          <h3>See it before you change it</h3>
+          <p>Adding a folder starts a read-only analysis. Nothing is compressed until you say so.</p>
+          <ul>
+            <li>Largest files and folders, with drill-down</li>
+            <li>Opportunity estimate from sampled Deflate</li>
+            <li>Unknown sizes show a dash, never a fake zero</li>
+          </ul>
+        </div>
+      </article>
+      <article class="pillar reveal" style="--d:.1s">
+        <div class="pillar__art" aria-hidden="true">
+          <div class="queue">
+            <div class="qitem done"><code>vendor\sdk.dll</code><span class="bar"><i></i></span></div>
+            <div class="qitem run"><code>exports\sales-export-14.csv</code><span class="bar"><i></i></span></div>
+            <div class="qitem"><code>logs\server-2026-11.log</code><span class="bar"><i></i></span></div>
+            <div class="qitem"><code>datasets\events.csv</code><span class="bar"><i></i></span></div>
+          </div>
+        </div>
+        <div class="pillar__body">
+          <span class="num">02 · Automate</span>
+          <h3>Policies, not chores</h3>
+          <p>Turn on automatic compression per folder. New, copied, replaced and changed files are picked up on their own.</p>
+          <ul>
+            <li>Exclusions, size and benefit thresholds</li>
+            <li>Quiet period, cooldown and schedules</li>
+            <li>Battery, CPU and free-space gates</li>
+          </ul>
+        </div>
+      </article>
+      <article class="pillar reveal" style="--d:.2s" data-observe>
+        <div class="pillar__art" aria-hidden="true">
+          <div class="ledger">
+            <div style="--h:62%;--i:0"></div><div style="--h:66%;--i:1"></div><div style="--h:64%;--i:2"></div>
+            <div class="amber" style="--h:48%;--i:3"></div><div style="--h:70%;--i:4"></div><div style="--h:74%;--i:5"></div>
+            <div style="--h:69%;--i:6"></div><div style="--h:60%;--i:7"></div><div style="--h:55%;--i:8"></div>
+            <div style="--h:52%;--i:9"></div><div class="amber" style="--h:40%;--i:10"></div><div style="--h:47%;--i:11"></div>
+          </div>
+        </div>
+        <div class="pillar__body">
+          <span class="num">03 · Account</span>
+          <h3>Measured, not guessed</h3>
+          <p>Each successful, measurable operation records its signed before-and-after allocation once, in a daily ledger kept apart from estimates.</p>
+          <ul>
+            <li>Signed <code>before − after</code> allocations</li>
+            <li>Decompression growth counts as negative</li>
+            <li>Ledger survives history pruning and restarts</li>
+          </ul>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SCREENSHOTS ================= -->
+<section class="section section--dark" id="tour">
+  <div class="guides" aria-hidden="true"><div class="container"><span></span><span></span><span></span><span></span></div></div>
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">The real app</span>
+      <h2 class="h-xl">Plain words.<br>Real numbers.</h2>
+      <p class="lede">These screenshots come from the actual app, taken after its own engine compressed a generated sample folder of logs, CSV, JSON, source and photos. Your savings will differ.</p>
+    </div>
+    <div class="tour reveal" data-tabs>
+      <div class="tour__tabs" role="tablist" aria-label="App screens">
+        <button role="tab" aria-selected="true" aria-controls="s-overview" id="st-overview">Overview</button>
+        <button role="tab" aria-selected="false" aria-controls="s-insights" id="st-insights" tabindex="-1">Storage insights</button>
+        <button role="tab" aria-selected="false" aria-controls="s-folders" id="st-folders" tabindex="-1">Managed folders</button>
+      </div>
+      <figure class="shot" role="tabpanel" id="s-overview" aria-labelledby="st-overview">
+        <img src="assets/screenshots/overview.png" width="1600" height="1026" loading="lazy" alt="Overview screen: 74.1 MB saved across one folder, all files compressed, 154 GB free">
+        <figcaption>How much space your folders use, and how much ZipXP has saved.</figcaption>
+      </figure>
+      <figure class="shot" role="tabpanel" id="s-insights" aria-labelledby="st-insights" hidden>
+        <img src="assets/screenshots/storage-insights.png" width="1600" height="1026" loading="lazy" alt="Storage insights: server-logs saved 62%, exports 45%, photos unchanged">
+        <figcaption>Logs, exports and source shrink by about half. Photos are already compressed, so they're skipped.</figcaption>
+      </figure>
+      <figure class="shot" role="tabpanel" id="s-folders" aria-labelledby="st-folders" hidden>
+        <img src="assets/screenshots/managed-folders.png" width="1600" height="1026" loading="lazy" alt="Managed folders screen with per-folder policy and status">
+        <figcaption>Each folder has its own policy, status and last scan.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ================= HOW IT WORKS ================= -->
+<section class="section section--soft" id="how">
+  <div class="guides" aria-hidden="true"><div class="container"><span></span><span></span><span></span><span></span></div></div>
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">How it works</span>
+      <h2 class="h-xl">Six steps.<br>You do three.</h2>
+      <p class="lede">Add, review, decide. ZipXP keeps doing the rest from the tray while it's running, even with the window closed.</p>
+    </div>
+    <div class="steps">
+      <div class="step" style="--d:0s"><h3>Add a folder</h3><p>Pick a local fixed NTFS folder like <code>C:\Users\you\Projects</code>. Overlapping roots are rejected up front.</p></div>
+      <div class="step" style="--d:.1s"><h3>Read-only analysis</h3><p>Allocation totals, candidate bytes, largest files, and how many directories already carry Windows' own compression flag.</p></div>
+      <div class="step" style="--d:.2s"><h3>Set a policy</h3><p>Turn on automation, choose subfolders and battery behavior. Advanced options hold thresholds, schedule and reserve.</p></div>
+      <div class="step" style="--d:.3s"><h3>Queue</h3><p>Eligible files join one persistent, sequential queue. File-system notifications and a 2-minute reconciliation scan keep it current.</p></div>
+      <div class="step" style="--d:.4s"><h3>Compress</h3><p>One file at a time, below-normal priority, through a validated native handle. Busy files retry with backoff.</p></div>
+      <div class="step" style="--d:.5s"><h3>Measure</h3><p>Actual allocation is read back from the same handle. Poor-benefit files are cached and left alone until their content changes.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PLAYGROUND ================= -->
+<section class="section" id="gates">
+  <div class="guides" aria-hidden="true"><div class="container"><span></span><span></span><span></span><span></span></div></div>
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Try it: policy gates</span>
+      <h2 class="h-xl">Polite by design.<br>Flip a switch and watch it wait.</h2>
+      <p class="lede">Gates are checked between operations, so the worker won't start a new file while a condition says wait. Toggle them below to watch the simulated queue respond.</p>
+    </div>
+    <div class="play" id="playground">
+      <div class="panel reveal">
+        <h3>Conditions right now</h3>
+        <p>Turn a condition on to make the worker wait.</p>
+        <div class="gates">
+          <label class="gate">
+            <span class="gi"><svg><use href="#i-battery"/></svg></span>
+            <span class="gt"><b>Running on battery</b><span>Per-folder: compress on AC only</span></span>
+            <span class="switch"><input type="checkbox" data-gate="battery" aria-label="Running on battery"><i></i></span>
+          </label>
+          <label class="gate">
+            <span class="gi"><svg><use href="#i-cpu"/></svg></span>
+            <span class="gt"><b>System CPU above 85%</b><span>Sampled total system usage</span></span>
+            <span class="switch"><input type="checkbox" data-gate="cpu" aria-label="System CPU above 85%"><i></i></span>
+          </label>
+          <label class="gate">
+            <span class="gi"><svg><use href="#i-clock"/></svg></span>
+            <span class="gt"><b>Outside folder schedule</b><span>Local hours, overnight ranges allowed</span></span>
+            <span class="switch"><input type="checkbox" data-gate="schedule" aria-label="Outside folder schedule"><i></i></span>
+          </label>
+          <label class="gate">
+            <span class="gi"><svg><use href="#i-disk"/></svg></span>
+            <span class="gt"><b>Free space below reserve</b><span>Keeps a reserve of at least 256 MiB</span></span>
+            <span class="switch"><input type="checkbox" data-gate="space" aria-label="Free space below reserve"><i></i></span>
+          </label>
+          <label class="gate">
+            <span class="gi"><svg><use href="#i-pencil"/></svg></span>
+            <span class="gt"><b>File was just written</b><span>Quiet period, 60 s recommended</span></span>
+            <span class="switch"><input type="checkbox" data-gate="quiet" aria-label="File was just written"><i></i></span>
+          </label>
+        </div>
+      </div>
+      <div class="panel worker reveal" style="--d:.1s">
+        <h3>Background worker</h3>
+        <div class="worker__status">
+          <span class="orb" aria-hidden="true"></span>
+          <div aria-live="polite"><b id="worker-title">Running</b><span id="worker-sub">One file at a time, below-normal priority.</span></div>
+        </div>
+        <div class="wq" aria-hidden="true">
+          <div class="wq__row"><span></span><em></em><i class="prog"></i></div>
+          <div class="wq__row"><span></span><em></em><i class="prog"></i></div>
+          <div class="wq__row"><span></span><em></em><i class="prog"></i></div>
+          <div class="wq__row"><span></span><em></em><i class="prog"></i></div>
+        </div>
+        <div class="worker__foot">
+          <span>Processed <b id="wq-done">0</b> · Measured <b id="wq-saved">0.0 MiB</b></span>
+          <span class="worker__actions"><button class="chip-btn" id="wq-pause" type="button">Pause all</button><button class="chip-btn" id="wq-reset" type="button">Reset</button></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SAFETY ================= -->
+<section class="section section--dark" id="safety">
+  <div class="guides" aria-hidden="true"><div class="container"><span></span><span></span><span></span><span></span></div></div>
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Careful by default</span>
+      <h2 class="h-xl">Every file passes five steps, start to finish.</h2>
+      <p class="lede">Compression is a filesystem attribute, not a rewrite into some other format. ZipXP still treats every operation as risky: it pins the file, proves the file is the same one it scanned, and checks the result. That makes races much less likely, but it isn't a guarantee against every concurrent change, so start with copies.</p>
+    </div>
+    <div class="pipeline" id="pipeline">
+      <div class="pstage"><span class="pn">01</span><div class="pic"><svg><use href="#i-lock"/></svg></div><h3>Pin the handle</h3><p>Open one handle to the original with no write or delete sharing.</p></div>
+      <div class="pstage"><span class="pn">02</span><div class="pic"><svg><use href="#i-id"/></svg></div><h3>Prove identity</h3><p>Resolved path and stable <code>FILE_ID_INFO</code> must match the scan.</p></div>
+      <div class="pstage"><span class="pn">03</span><div class="pic"><svg><use href="#i-check"/></svg></div><h3>Validate metadata</h3><p>Length and last-write time are re-checked fresh. Changed files wait for a rescan.</p></div>
+      <div class="pstage"><span class="pn">04</span><div class="pic"><svg><use href="#i-compress"/></svg></div><h3>Compress natively</h3><p><code>FSCTL_SET_COMPRESSION</code> on that same handle. One file at a time.</p></div>
+      <div class="pstage"><span class="pn">05</span><div class="pic"><svg><use href="#i-measure"/></svg></div><h3>Read it back</h3><p>Actual state and allocation are read from the handle and written to the ledger exactly once.</p></div>
+    </div>
+
+    <div class="excl">
+      <div class="reveal">
+        <h3>What it will never touch</h3>
+        <p>Some files are excluded from changes outright, and a few kinds of location are refused altogether. ZipXP can't read a file's size or attributes? It shows an error. It doesn't count that file as zero.</p>
+      </div>
+      <div class="reveal" style="--d:.1s">
+        <p class="chips-legend"><span>File types never changed</span><span class="no">Locations refused</span></p>
+        <div class="chips">
+          <span>Hidden &amp; system files</span><span>Encrypted (EFS)</span><span>Sparse files</span><span>Offline / cloud recall</span>
+          <span>Read-only files</span><span>Multiple hard links</span><span>Reparse points &amp; junctions</span>
+          <span class="no">Drive roots</span><span class="no">Windows &amp; Program Files</span><span class="no">UNC &amp; network paths</span><span class="no">WSL filesystems</span><span class="no">Its own database</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="todo reveal">
+      <h3>Still to do before 1.0</h3>
+      <ul>
+        <li>Compatibility testing across cluster sizes, hardware, permissions, antivirus and backup tools</li>
+        <li>Repeated CPU, I/O and open/save latency measurements on real workloads</li>
+        <li>A release signing certificate and a signed, timestamped package</li>
+        <li>Sign-out, restart and sign-in checks of the optional startup entry</li>
+        <li>A real user pilot, an accessibility review, and install/update recovery on more machines</li>
+      </ul>
+      <a href="https://github.com/kiranscript/zipxp/blob/main/docs/validation.md">Read the validation record →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ACCOUNTING ================= -->
+<section class="section" id="accounting">
+  <div class="guides" aria-hidden="true"><div class="container"><span></span><span></span><span></span><span></span></div></div>
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Honest storage accounting</span>
+      <h2 class="h-xl">Four numbers.<br>Never blended into one.</h2>
+      <p class="lede">Most “space saved” counters mix guesses with facts. ZipXP keeps what the drive reports, what it scanned, what it estimates, and what it actually measured in four separate places.</p>
+    </div>
+    <div class="acct">
+      <div class="acard reveal" style="--c:#4cc2ff"><span class="ak">A</span><h3>Volume usage</h3><p>Live drive statistics. Includes activity from every other app, so it moves on its own.</p><div class="eq">DriveInfo · live, all apps</div></div>
+      <div class="acard reveal" style="--c:#1d58d8;--d:.08s"><span class="ak">B</span><h3>Managed allocation</h3><p>Primary-stream allocation from each root's latest scan, with its timestamp and how much coverage is unknown.</p><div class="eq">Σ allocated · hard links once</div></div>
+      <div class="acard reveal" style="--c:#5a6f92;--d:.16s"><span class="ak">C</span><h3>Estimated opportunity</h3><p>Three 32 KiB Deflate samples per eligible file, scaled up. A heuristic, clearly labeled. Sampling never modifies anything.</p><div class="eq">3 × 32 KiB samples → scale</div></div>
+      <div class="acard reveal" style="--c:#18b67a;--d:.24s"><span class="ak">D</span><h3>Net measured reduction</h3><p>Signed difference for successful operations with stable identity. Zero is valid. Decompression is negative.</p><div class="eq">Σ (before − after) allocation</div></div>
+    </div>
+    <div class="callout reveal">
+      <svg><use href="#i-warn"/></svg>
+      <div><b>No marketing math.</b> The measured reduction is a running total of past operations. It doesn't claim that much free space exists right now, and it doesn't claim savings still remain after you delete files. Already-compressed, interrupted, or unmeasured jobs add nothing.<br><b>Known issue:</b> after a restore, growth can be measured before the file handle closes, which overstates it for some file sizes and can show a small negative total. Your files aren't affected. Tracked in <a href="https://github.com/kiranscript/zipxp/issues/2">#2</a>. A fix (<a href="https://github.com/kiranscript/zipxp/pull/4">#4</a>) is merged on a branch but hasn't reached <code>main</code> yet.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= STATS ================= -->
+<section class="section section--soft section--tight" aria-label="By the numbers">
+  <div class="container">
+    <div class="stats">
+      <div class="stat reveal"><strong data-count="68">68</strong><span>native and core checks passing on a real NTFS volume</span></div>
+      <div class="stat reveal" style="--d:.08s"><strong>0</strong><span>external NuGet or UI packages. SQLite comes from Windows itself.</span></div>
+      <div class="stat reveal" style="--d:.16s"><strong>1</strong><span>sequential worker per user, with no service and no elevation</span></div>
+      <div class="stat reveal" style="--d:.24s"><strong data-count="4">4</strong><span>app screens launched and navigated by native UI Automation in the checks</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DEVELOPERS ================= -->
+<section class="section section--dark" id="developers">
+  <div class="guides" aria-hidden="true"><div class="container"><span></span><span></span><span></span><span></span></div></div>
+  <div class="container dev">
+    <div class="reveal">
+      <span class="eyebrow">For developers</span>
+      <h2 class="h-xl">Build it, run it, ship it.</h2>
+      <p class="lede">Clone it and run it with the .NET 10 SDK, launch it from WSL with the Windows SDK, or publish a self-contained x64 package that needs no separate .NET runtime.</p>
+      <ul>
+        <li><span class="gi"><svg><use href="#i-terminal"/></svg></span><div><b>One-line dev loop</b><span><code>--fresh</code>, <code>--rebuild</code> and <code>--reset</code> flags. Ctrl+C asks the app to quit cleanly.</span></div></li>
+        <li><span class="gi"><svg><use href="#i-shield"/></svg></span><div><b>Real-filesystem checks</b><span>Real compression, hashes, locks, hard links and replacements, plus UI Automation of the actual window.</span></div></li>
+        <li><span class="gi"><svg><use href="#i-package"/></svg></span><div><b>Per-user install</b><span>No admin. The uninstaller keeps your policies and history so a reinstall picks up where you left off.</span></div></li>
+      </ul>
+    </div>
+    <div class="term reveal" style="--d:.1s" data-tabs>
+      <div class="term__tabs" role="tablist" aria-label="Commands">
+        <button role="tab" aria-selected="true" aria-controls="t-curl" id="tab-curl">Install</button>
+        <button role="tab" aria-selected="false" aria-controls="t-quick" id="tab-quick" tabindex="-1">Build</button>
+        <button role="tab" aria-selected="false" aria-controls="t-wsl" id="tab-wsl" tabindex="-1">WSL</button>
+        <button role="tab" aria-selected="false" aria-controls="t-pub" id="tab-pub" tabindex="-1">Publish &amp; install</button>
+      </div>
+      <div class="term__body">
+        <button class="copy" data-copy type="button">Copy</button>
+<pre role="tabpanel" id="t-curl" aria-labelledby="tab-curl"><span class="c"># Install the latest release for this user (no admin)</span>
+<span class="p">PS&gt; </span><span class="line"><span class="k">curl.exe</span> -fsSL https://kiranscript.github.io/zipxp/install.ps1 -o <span class="s">"$env:TEMP\zipxp-get.ps1"</span></span>
+<span class="p">PS&gt; </span><span class="line">powershell -NoProfile -ExecutionPolicy Bypass -File <span class="s">"$env:TEMP\zipxp-get.ps1"</span></span>
+
+<span class="c"># Optional: start at sign-in and launch now</span>
+<span class="p">PS&gt; </span><span class="line">powershell -NoProfile -ExecutionPolicy Bypass -File <span class="s">"$env:TEMP\zipxp-get.ps1"</span> -StartAtLogin -Launch</span></pre>
+<pre role="tabpanel" id="t-quick" aria-labelledby="tab-quick" hidden><span class="c"># Clone and run (Windows, .NET 10 SDK)</span>
+<span class="p">PS&gt; </span><span class="line">git clone https://github.com/kiranscript/zipxp.git</span>
+<span class="p">PS&gt; </span><span class="line">cd zipxp</span>
+<span class="p">PS&gt; </span><span class="line"><span class="k">dotnet</span> run --project src/ZipXP.App/ZipXP.App.csproj</span>
+
+<span class="c"># Run the full native + UI check harness</span>
+<span class="p">PS&gt; </span><span class="line"><span class="f">.\scripts\check.ps1</span></span></pre>
+<pre role="tabpanel" id="t-wsl" aria-labelledby="tab-wsl" hidden><span class="c"># Launch the native Windows app from WSL</span>
+<span class="p">$ </span><span class="line">./scripts/dev.sh</span>
+
+<span class="c"># Throwaway data, your real state is untouched</span>
+<span class="p">$ </span><span class="line">./scripts/dev.sh --fresh</span>
+
+<span class="c"># Clean bin/ and obj/ first, then start empty</span>
+<span class="p">$ </span><span class="line">./scripts/dev.sh --rebuild --fresh</span>
+
+<span class="c"># Fully isolated instance</span>
+<span class="p">$ </span><span class="line">./scripts/dev.sh --data-dir <span class="s">'C:\Temp\ZipXP-isolated'</span></span></pre>
+<pre role="tabpanel" id="t-pub" aria-labelledby="tab-pub" hidden><span class="c"># Self-contained Windows x64 app + ZIP under artifacts\</span>
+<span class="p">PS&gt; </span><span class="line"><span class="f">.\scripts\publish.ps1</span></span>
+
+<span class="c"># Verify isolated install, launch, exit, uninstall</span>
+<span class="p">PS&gt; </span><span class="line"><span class="f">.\scripts\package-check.ps1</span></span>
+
+<span class="c"># Install for the current user (from the extracted ZIP)</span>
+<span class="p">PS&gt; </span><span class="line"><span class="f">.\install.ps1</span> -StartAtLogin -Launch</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= REVERSIBLE ================= -->
+<section class="section section--soft" id="reversible">
+  <div class="guides" aria-hidden="true"><div class="container"><span></span><span></span><span></span><span></span></div></div>
+  <div class="container split">
+    <div class="reveal">
+      <span class="eyebrow">Reversible by default</span>
+      <h2 class="h-xl">Changed your mind?<br>Restore is built in.</h2>
+      <p class="lede">ZipXP never deletes, archives, or moves your files. <b>Restore original size</b> decompresses the files it manages when there's room for them, and every recursive action shows you its scope before it runs. Windows' own per-folder compression flags are a separate switch.</p>
+      <ul class="checks">
+        <li>Adding a folder only analyzes. It never compresses.</li>
+        <li>“Compress now” is a one-off job. It doesn't turn on automation.</li>
+        <li>Quitting finishes the current file, then saves pending work.</li>
+        <li>Crash? Running jobs become retry records and are rechecked.</li>
+      </ul>
+    </div>
+    <div class="actions-list">
+      <div class="alist reveal" style="--c:linear-gradient(135deg,#2f7df6,#1d58d8)"><span class="gi"><svg><use href="#i-undo"/></svg></span><div><b>Restore original size…</b><span>Turns off automation for that folder and cancels pending work, then decompresses. A preview shows the headroom it needs first.</span></div></div>
+      <div class="alist reveal" style="--c:linear-gradient(135deg,#4cc2ff,#1b8fd0);--d:.08s"><span class="gi"><svg><use href="#i-pause"/></svg></span><div><b>Pause all · Pause folder</b><span>Stops new operations after the current file. Your folders' Windows compression settings stay as they are.</span></div></div>
+      <div class="alist reveal" style="--c:linear-gradient(135deg,#1747c4,#11264a);--d:.16s"><span class="gi"><svg><use href="#i-folder"/></svg></span><div><b>Turn off Windows' own folder compression</b><span>A separate job that clears the flags that make Windows compress new files in a folder automatically. Files already compressed stay compressed.</span></div></div>
+      <div class="alist reveal" style="--c:linear-gradient(135deg,#8aa0c2,#5a6f92);--d:.24s"><span class="gi"><svg><use href="#i-unlink"/></svg></span><div><b>Stop managing this folder</b><span>Removes the root and its future jobs. Your files stay exactly as they are, and measurement history is kept.</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FAQ ================= -->
+<section class="section" id="faq">
+  <div class="container">
+    <div class="section-head section-head--center reveal">
+      <span class="eyebrow">Questions</span>
+      <h2 class="h-xl">The fine print, up front.</h2>
+    </div>
+    <div class="faq reveal">
+      <details>
+        <summary>Is this like zipping my files?</summary>
+        <div class="ans"><p>No. ZipXP uses Windows' built-in NTFS compression. Files keep their original names, paths and extensions, and every app opens them exactly as before. Windows decompresses them on the fly when they're read.</p></div>
+      </details>
+      <details>
+        <summary>How much space will I save?</summary>
+        <div class="ans"><p>It depends entirely on what's in the folder. Text, source code, documents and logs shrink well. Photos, video and archives are already compressed and barely change, and ZipXP skips files that don't benefit.</p><p>The in-app estimate is a heuristic from Deflate samples, but NTFS uses a different algorithm, so treat the estimate as a hint. The measured number is what counts.</p></div>
+      </details>
+      <details>
+        <summary>Will it slow down my PC?</summary>
+        <div class="ans"><p>ZipXP runs one below-normal-priority process with a single sequential worker, a 500 ms interval between files, and pauses new operations when sampled CPU is above 85%. These gates are checked between operations. They aren't hard resource caps.</p><p>Reading compressed files costs some CPU. How much depends on your files, hardware and workload, and broad performance measurements are still to come, so try it on representative tasks first.</p></div>
+      </details>
+      <details>
+        <summary>Does it need administrator rights or a service?</summary>
+        <div class="ans"><p>No. It's a per-user app with a tray icon. Signing in only starts it if you explicitly turn on <b>Start when I sign in</b>.</p></div>
+      </details>
+      <details>
+        <summary>What happens if it crashes mid-file?</summary>
+        <div class="ans"><p>Jobs that were running become retry records, and the file's actual state and identity are checked again. If an interrupted operation had already compressed a file, ZipXP records it as unchanged instead of inventing a saving. Files changed while ZipXP was closed are found on the next startup.</p></div>
+      </details>
+      <details>
+        <summary>Is it ready for production use?</summary>
+        <div class="ans"><p>Not yet. ZipXP 0.2 is an unsigned pre-release. The development checks pass, but broader hardware and antivirus compatibility testing, a release signing certificate, and a real user pilot are still to come. Use disposable copies of your data until then. See <a href="docs.html#boundaries">boundaries</a>.</p></div>
+      </details>
+      <details>
+        <summary>Is there an installer to download?</summary>
+        <div class="ans"><p>Yes, once a release is published: a one-line <code>curl.exe</code> command downloads the ZIP, verifies its SHA-256 and installs per user (see the <a href="docs.html#quickstart">quickstart</a>). Release ZIPs carry a GitHub build attestation, and the script checks it when the GitHub CLI is installed. The build is not code-signed. You can also build it from source with the .NET 10 SDK, or run <code>scripts\publish.ps1</code> to make the same self-contained ZIP yourself.</p></div>
+      </details>
+      <details>
+        <summary>Where is my data stored?</summary>
+        <div class="ans"><p>Policies, observations and history live locally in <code>%LOCALAPPDATA%\ZipXP\StorageManager\storage.sqlite3</code>. Nothing is uploaded, and there's no telemetry.</p></div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CTA ================= -->
+<section class="cta">
+  <div class="cta__bg" aria-hidden="true">
+    <div class="fallback"></div>
+    <canvas data-gradient data-colors="#1d58d8,#4cc2ff,#2f7df6,#9fe8ff,#4f8ff7"></canvas>
+  </div>
+  <div class="container">
+    <div class="cta__card reveal">
+      <div>
+        <h2 class="h-lg">Give your SSD some breathing room.</h2>
+        <p>Clone the repo, start it with <code>dotnet run</code>, and add a folder of copies. ZipXP analyzes it before it changes a single byte.</p>
+      </div>
+      <div class="cta__actions">
+        <a class="btn btn--lg" href="docs.html#quickstart">Read the quickstart <i class="arrow"></i></a>
+        <a class="btn btn--lg btn--light" href="https://github.com/kiranscript/zipxp"><svg width="18" height="18"><use href="#i-github"/></svg> Star on GitHub</a>
+        <span class="cta__fine">Windows 11 · local NTFS · MIT license · pre-release</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__about">
+        <a class="brand" href="./"><img src="assets/logo.svg" alt="" width="30" height="30"> ZipXP</a>
+        <p>The fix for a full disk. Policy-driven, measured, reversible NTFS compression for Windows 11.</p>
+      </div>
+      <div>
+        <h2>Product</h2>
+        <ul><li><a href="#product">Overview</a></li><li><a href="#tour">Screenshots</a></li><li><a href="#gates">Policy gates</a></li><li><a href="#safety">Safety</a></li><li><a href="#accounting">Accounting</a></li></ul>
+      </div>
+      <div>
+        <h2>Docs</h2>
+        <ul><li><a href="docs.html#quickstart">Quickstart</a></li><li><a href="docs.html#using">Using ZipXP</a></li><li><a href="docs.html#undo">Undo &amp; stopping</a></li><li><a href="docs.html#install">Publish &amp; install</a></li></ul>
+      </div>
+      <div>
+        <h2>Project</h2>
+        <ul><li><a href="https://github.com/kiranscript/zipxp">GitHub</a></li><li><a href="https://github.com/kiranscript/zipxp/issues">Issues</a></li><li><a href="https://github.com/kiranscript/zipxp/blob/main/docs/validation.md">Validation record</a></li><li><a href="https://github.com/kiranscript/zipxp/blob/main/CHANGELOG.md">Changelog</a></li><li><a href="https://github.com/kiranscript/zipxp/blob/main/LICENSE">MIT license</a></li></ul>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span>© <span data-year>2026</span> ZipXP. Windows, NTFS and .NET are trademarks of Microsoft.</span>
+      <a href="#top">Back to top ↑</a>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/gradient.js" defer></script>
+<script src="assets/main.js" defer></script>
+</body>
+</html>

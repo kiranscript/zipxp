@@ -34,7 +34,15 @@
 
 ## Get started
 
-ZipXP needs Windows 11 and a local NTFS drive. There is no installer download yet, so for now build it from source with the [.NET 10 SDK](https://dotnet.microsoft.com/download) and Node.js 22.12+ installed. The React desktop interface also requires the [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/):
+ZipXP needs Windows 11 and a local NTFS drive. Install the latest release for your user (no admin needed) from Windows PowerShell:
+
+```powershell
+curl.exe -fsSL https://kiranscript.github.io/zipxp/install.ps1 -o "$env:TEMP\zipxp-get.ps1"; powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\zipxp-get.ps1"
+```
+
+It downloads the release ZIP, verifies its SHA-256 and runs the installer; see [Install and uninstall](docs/install.md) for options and what it does. The React desktop interface requires the [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
+
+Or build from source with the [.NET 10 SDK](https://dotnet.microsoft.com/download) and Node.js 22.12+ installed:
 
 ```powershell
 git clone https://github.com/kiranscript/zipxp.git
@@ -75,6 +83,7 @@ tests/            real-filesystem checks
 scripts/          dev launcher, check, publish, install
 docs/             documentation
 assets/            logo and screenshots
+website/           project website (GitHub Pages)
 ```
 
 ## Contributing
