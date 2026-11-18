@@ -20,9 +20,9 @@
 > **Status: pre-release (0.2).** ZipXP is under active development and the build is unsigned. Try it on a folder of copies first. See [Safety](docs/safety.md).
 
 <p align="center">
-  <img src="assets/screenshots/overview.png" alt="ZipXP overview showing 74.1 MB saved, 54% less space used" width="760">
+  <img src="assets/screenshots/overview.png" alt="ZipXP overview showing 48.2 MB saved by ZipXP" width="760">
 </p>
-<p align="center"><sub>ZipXP after compressing a sample work folder (logs, CSV, JSON and source files; photos are skipped). The sample data is generated text, so your savings will differ.</sub></p>
+<p align="center"><sub>ZipXP after compressing a generated test folder (repetitive text, logs, CSV and JSON, plus random data and a ZIP that are left alone). The data is synthetic and very compressible, so your savings will differ.</sub></p>
 
 ## Why ZipXP
 
@@ -54,10 +54,10 @@ If WebView2 is unavailable, pass `-- --native-ui` to the run command for the ori
 
 On first launch ZipXP suggests folders that usually compress well, such as a code folder or Documents. Choose one (or **Choose a folder**) and read the estimate before deciding anything. To build a package you can install, see [Install and uninstall](docs/install.md).
 
-Storage insights shows which folders take the room and what was saved in each:
+Storage insights lists what takes the room in each folder, with every file's original size, size now and space saved:
 
 <p align="center">
-  <img src="assets/screenshots/storage-insights.png" alt="ZipXP storage insights by folder" width="760">
+  <img src="assets/screenshots/storage-insights.png" alt="ZipXP storage insights listing per-file original size, size used now and space saved" width="760">
 </p>
 
 Compression savings depend entirely on what is in the folder. One known accounting issue (see [validation](docs/validation.md)) can overstate how much space is freed after restoring some files. Text, source code, documents and logs shrink well; photos, video and archives are already compressed and barely change. ZipXP measures the real result per file and skips files that don't benefit.
