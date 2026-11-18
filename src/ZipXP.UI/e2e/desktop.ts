@@ -35,7 +35,7 @@ export async function openApp(page: Page, scenario: Scenario = {}) {
                 snapshot.folders = [];
                 snapshot.jobs = [];
                 snapshot.volumes = [];
-                snapshot.original = 0;
+                snapshot.savings = { delta: 0, measured: 0 };
                 snapshot.allocated = 0;
             }
             if (scenario.folderCount) {

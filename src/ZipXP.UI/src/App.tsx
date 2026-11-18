@@ -58,9 +58,9 @@ const pages = [
     { name: "Activity", icon: Activity },
 ] as const;
 const hints: Record<Page, string> = {
-    Overview: "Your storage, savings, and background activity.",
+    Overview: "See what you could save and what ZipXP has already saved.",
     "Managed folders":
-        "Choose which folders to watch and how to compress them.",
+        "Choose a folder to compress once, turn on auto-compression, or restore files.",
     "Storage insights": "Find the files and folders using the most space.",
     Activity: "Track work and resolve files that need attention.",
 };
@@ -231,6 +231,8 @@ function useScrollEdges(contentKey?: string | number) {
 
 export default function App() {
     const [page, setPage] = useState<Page>("Overview");
+    const heading = useRef<HTMLHeadingElement>(null);
+    const focusPageHeading = useRef(false);
     const [data, setData] = useState<Snapshot | null>(null);
     const [actionError, setError] = useState("");
     const [connectionError, setConnectionError] = useState("");
@@ -244,6 +246,7 @@ export default function App() {
     const [actionLabel, setActionLabel] = useState("");
     const [confirmation, setConfirmation] = useState(false);
     const [selectedId, setSelectedId] = useState("");
+    const [addedFolderId, setAddedFolderId] = useState("");
     const [editing, setEditing] = useState<ManagedFolder | null>(null);
     const [activityFilter, setActivityFilter] = useState("All");
     const loading = useRef(false),
@@ -276,9 +279,32 @@ export default function App() {
     }, [refresh]);
     useEffect(() => {
         document.scrollingElement?.scrollTo?.({ top: 0, left: 0 });
+        if (focusPageHeading.current) {
+            focusPageHeading.current = false;
+            heading.current?.focus({ preventScroll: true });
+        }
     }, [page]);
+    const openPage = (next: Page) => {
+        if (next === page) return;
+        focusPageHeading.current = true;
+        setPage(next);
+    };
     const folders = data?.folders ?? [];
-    const selected = folders.find((f) => f.id === selectedId) ?? folders[0];
+    const selected =
+        folders.find((f) => f.id === selectedId) ??
+        (addedFolderId ? undefined : folders[0]);
+    const selectFolder = (id: string) => {
+        setAddedFolderId("");
+        setSelectedId(id);
+    };
+    const newFolderReady = Boolean(
+        addedFolderId && selected?.id === addedFolderId,
+    );
+    useEffect(() => {
+        if (!newFolderReady || page !== "Managed folders") return;
+        document.getElementById("selected-folder-title")?.focus();
+        setAddedFolderId("");
+    }, [newFolderReady, page]);
     async function act(action: () => Promise<unknown>, announce = true) {
         if (command.current || connectionError || exitRequested.current) return;
         command.current = true;
@@ -310,9 +336,10 @@ export default function App() {
         act(async () => {
             const id = await request("addFolder", {});
             if (id) {
+                setAddedFolderId(id);
                 setSelectedId(id);
-                setPage("Managed folders");
-                return "Folder added. The first scan only reads your files. Open Settings to turn on automatic compression.";
+                openPage("Managed folders");
+                return "Folder added. ZipXP scans for possible savings and leaves your files as they are.";
             }
         });
     const queue = (
@@ -365,7 +392,7 @@ export default function App() {
     const failed = data?.jobs.filter((j) => j.state === "Failed").length ?? 0;
     const openFailures = () => {
         setActivityFilter("Failed");
-        setPage("Activity");
+        openPage("Activity");
     };
     const footerStatus = quitting
         ? { Icon: Power, text: "Quitting ZipXP…" }
@@ -407,7 +434,6 @@ export default function App() {
                             ZipXP<small>Local storage manager</small>
                         </span>
                     </button>
-                    <div className="nav-caption">WORKSPACE</div>
                     <nav aria-label="Main navigation">
                         {pages.map(({ name, icon: Icon }) => (
                             <button
@@ -476,7 +502,9 @@ export default function App() {
                 <main id="workspace" tabIndex={-1}>
                     <header>
                         <div>
-                            <h1>{page}</h1>
+                            <h1 ref={heading} tabIndex={-1}>
+                                {page}
+                            </h1>
                             <p>{hints[page]}</p>
                         </div>
                         <div className="actions">
@@ -648,7 +676,7 @@ export default function App() {
                                         add={add}
                                         queue={queue}
                                         manage={() =>
-                                            setPage("Managed folders")
+                                            openPage("Managed folders")
                                         }
                                         openFailures={openFailures}
                                     />
@@ -658,9 +686,13 @@ export default function App() {
                                         globallyPaused={data.paused}
                                         folders={folders}
                                         selected={selected}
-                                        select={setSelectedId}
+                                        adding={Boolean(addedFolderId)}
+                                        select={selectFolder}
                                         add={add}
                                         edit={edit}
+                                        browse={() =>
+                                            openPage("Storage insights")
+                                        }
                                         queue={queue}
                                         act={act}
                                     />
@@ -670,7 +702,7 @@ export default function App() {
                                         key={selected?.id ?? "empty"}
                                         folders={folders}
                                         selected={selected}
-                                        select={setSelectedId}
+                                        select={selectFolder}
                                         act={act}
                                     />
                                 )}
@@ -745,7 +777,7 @@ function Overview({
                     <p>
                         Add a folder to estimate its compression savings.
                         <br />
-                        Your files keep the same names and locations.
+                        Then choose whether to compress once or automatically.
                     </p>
                     <ActionButton
                         className="primary"
@@ -761,17 +793,25 @@ function Overview({
                 </Empty>
             </section>
         );
-    const saved = Math.max(0, data.original - data.allocated);
-    const measured = folders.some((f) => f.scan);
-    const eligible = folders.filter((f) => !f.policy.paused);
+    const scanned = folders.filter((f) => f.scan).length;
+    const eligible = folders.filter(
+        (f) => !f.policy.paused && (f.scan?.candidates ?? 0) > 0,
+    );
+    const enabled = folders.filter((f) => f.policy.enabled).length;
     const estimate = folders.reduce(
         (sum, f) => sum + (f.scan?.estimatedSaving ?? 0),
         0,
     );
-    const available = eligible.reduce(
-        (sum, f) => sum + (f.scan?.estimatedSaving ?? 0),
-        0,
-    );
+    const { delta, measured } = data.savings;
+    const compressNote = data.paused
+        ? "Resume all folders to compress them."
+        : eligible.length > 0
+          ? "Preview one-time compression for folders with eligible files."
+          : !scanned
+            ? "One-time compression is available after the first scan."
+            : folders.some((f) => (f.scan?.candidates ?? 0) > 0)
+              ? "Resume the folders with eligible files to compress them."
+              : "The scans found no files to compress right now.";
     const pending = data.jobs.filter((j) => j.pending).length;
     const failed = data.jobs.filter((j) => j.state === "Failed").length;
     return (
@@ -802,100 +842,79 @@ function Overview({
             )}
             <section className="savings card">
                 <div className="savings-copy">
-                    <div className="section-label">SPACE SAVED</div>
-                    <h2>
-                        {measured ? bytes(saved) : "—"}
-                        <span> saved</span>
-                    </h2>
+                    <h2 className="savings-label">Estimated savings</h2>
+                    <strong className="savings-value">
+                        {!scanned
+                            ? "Waiting for scan"
+                            : estimate
+                              ? bytes(estimate)
+                              : "None found yet"}
+                    </strong>
                     <p>
-                        {saved > 0 && data.original > 0
-                            ? `Your managed files use ${Math.round((saved / data.original) * 100)}% less disk space.`
-                            : "Run compression once or turn on automatic compression in folder settings."}
+                        {!scanned
+                            ? "ZipXP will estimate what compression could save."
+                            : estimate
+                              ? "Based on the latest scans. Actual savings may differ."
+                              : "The latest scans found no additional savings."}
                     </p>
-                    <div className="actions">
+                    <div className="actions wrap">
+                        <button className="primary" onClick={manage}>
+                            Manage compression <ArrowUpRight size={16} />
+                        </button>
                         <ActionButton
-                            className="primary"
                             confirmation
-                            disabled={!available || data.paused}
+                            disabled={!eligible.length || data.paused}
+                            aria-describedby="compress-all-note"
                             onClick={() => void queue("Compress")}
                         >
                             <Sparkles size={17} />
-                            Compress all eligible
+                            Compress all once
                         </ActionButton>
-                        <button onClick={manage}>
-                            Manage folders <ArrowUpRight size={16} />
-                        </button>
                     </div>
-                    <p className="scope-note">
-                        {data.paused
-                            ? "Resume all folders before starting a new compression job."
-                            : `One-time compression across ${eligible.length} unpaused ${eligible.length === 1 ? "folder" : "folders"}. You’ll see a preview first.`}
+                    <p className="scope-note" id="compress-all-note">
+                        {compressNote}
                     </p>
                 </div>
-                <div className="savings-ratio">
-                    <span>
-                        {measured && data.original > 0
-                            ? `${Math.round((saved / data.original) * 100)}%`
-                            : "—"}
-                    </span>
-                    <small>less space used</small>
-                </div>
-                <div className="space-breakdown">
-                    <div className="bar-label">
-                        <span>
-                            Used now{" "}
-                            <strong>
-                                {measured ? bytes(data.allocated) : "—"}
-                            </strong>
-                        </span>
-                        <span>
-                            Original size{" "}
-                            <strong>
-                                {measured ? bytes(data.original) : "—"}
-                            </strong>
-                        </span>
-                    </div>
-                    <Meter
-                        value={
-                            data.original ? data.allocated / data.original : 0
-                        }
-                        label="Space used compared with original size"
-                    />
-                    <div className="legend">
-                        <span>
-                            <i />
-                            Used on disk
-                        </span>
-                        <span>
-                            <i className="mint" />
-                            Space saved
-                        </span>
-                    </div>
+                <div className="savings-result">
+                    <h2 className="savings-label">Space saved by ZipXP</h2>
+                    <strong className="savings-value">
+                        {!measured
+                            ? "None recorded"
+                            : delta > 0
+                              ? bytes(delta)
+                              : delta < 0
+                                ? `${bytes(-delta)} more used`
+                                : "No net change"}
+                    </strong>
+                    <p>
+                        All-time net change from ZipXP’s compression and
+                        restores.
+                    </p>
                 </div>
             </section>
             <div className="stats-grid">
                 <section className="card stat">
                     <span className="stat-icon">
-                        <Sparkles size={20} />
+                        <HardDrive size={20} />
                     </span>
-                    <div className="section-label">POTENTIAL SAVINGS</div>
-                    <strong>{measured ? bytes(estimate) : "—"}</strong>
-                    <p>
-                        Estimate across all folders. Actual savings may differ.
-                    </p>
+                    <div className="section-label">FOLDER SIZE ON DISK</div>
+                    <strong>{scanned ? bytes(data.allocated) : "—"}</strong>
+                    <p>Files measured in your managed folders.</p>
                 </section>
                 <section className="card stat">
                     <span className="stat-icon">
                         <Folder size={20} />
                     </span>
-                    <div className="section-label">MANAGED FOLDERS</div>
+                    <div className="section-label">AUTO-COMPRESSION</div>
                     <strong>
-                        {folders.length}
-                        <small> folders</small>
+                        {enabled}
+                        <small> of {folders.length} folders</small>
                     </strong>
-                    <button className="text-button" onClick={manage}>
-                        Manage your folders <ArrowUpRight size={15} />
-                    </button>
+                    <p>
+                        {enabled
+                            ? "Covers existing, new and changed files."
+                            : "Off for all folders."}
+                    </p>
                 </section>
                 <section className="card stat">
                     <span className="stat-icon">
@@ -928,7 +947,9 @@ function Overview({
                                   ? "Processing a file in the background."
                                   : pending
                                     ? "Queued files will run when conditions allow."
-                                    : "Up to date. Watching for file changes."}
+                                    : enabled
+                                      ? "Watching for file changes."
+                                      : "No work queued."}
                         </p>
                     )}
                 </section>
@@ -965,18 +986,11 @@ function Overview({
                 <div className="message warning">
                     <AlertCircle size={18} />
                     <span>
-                        {data.unknown} items couldn’t be measured. Storage
-                        totals include measured files only.
+                        Some items were skipped or couldn’t be measured. The
+                        folder size includes measured files only.
                     </span>
                 </div>
             )}
-            <div className="reassurance">
-                <ShieldCheck size={17} />
-                <span>
-                    Nothing deleted. Restore the original size from Managed
-                    folders.
-                </span>
-            </div>
         </>
     );
 }
@@ -1031,18 +1045,22 @@ function FolderPanel({
     globallyPaused,
     folders,
     selected,
+    adding,
     select,
     add,
     edit,
+    browse,
     queue,
     act,
 }: {
     globallyPaused: boolean;
     folders: ManagedFolder[];
     selected?: ManagedFolder;
+    adding: boolean;
     select: (id: string) => void;
     add: () => Promise<void>;
     edit: (f: ManagedFolder) => void;
+    browse: () => void;
     queue: (
         op: "Compress" | "Decompress" | "ClearDefault",
         id: string,
@@ -1052,11 +1070,15 @@ function FolderPanel({
     const scroll = useScrollEdges(folders.length);
     return (
         <section className="card folders-card">
-            {!folders.length ? (
+            {adding && !selected ? (
+                <Empty title="Loading your new folder…">
+                    <p>ZipXP will scan it for possible savings.</p>
+                </Empty>
+            ) : !folders.length ? (
                 <Empty title="Choose a folder to manage">
                     <p>
-                        Start with a scan. Compression stays off until you
-                        choose to enable it.
+                        ZipXP scans for possible savings. After the scan, choose
+                        whether to compress once or turn on auto-compression.
                     </p>
                     <ActionButton
                         className="primary"
@@ -1113,29 +1135,24 @@ function FolderPanel({
                                         </span>
                                     </strong>
                                     <small>
-                                        {f.scan
-                                            ? `${bytes(Math.max(0, f.scan.logical - f.scan.allocated))} saved`
-                                            : "Waiting for scan"}
+                                        {!f.scan
+                                            ? "Waiting for scan"
+                                            : f.scan.estimatedSaving > 0
+                                              ? `Could save ${bytes(f.scan.estimatedSaving)}`
+                                              : "No savings found"}
                                     </small>
                                 </div>
                                 <span
                                     className={`pill ${f.policy.paused || (globallyPaused && f.policy.enabled) ? "amber" : f.policy.enabled ? "green" : ""}`}
                                 >
-                                    {globallyPaused && f.policy.enabled
-                                        ? "Paused globally"
+                                    {f.policy.enabled
+                                        ? f.policy.paused || globallyPaused
+                                            ? "Auto on · paused"
+                                            : "Auto on"
                                         : f.policy.paused
-                                          ? "Paused"
-                                          : f.policy.enabled
-                                            ? "Auto-compress on"
-                                            : "Analysis only"}
+                                          ? "Auto off · paused"
+                                          : "Auto off"}
                                 </span>
-                                <button
-                                    aria-label={`Settings for ${f.name}`}
-                                    title={`Settings for ${f.name}`}
-                                    onClick={() => edit(f)}
-                                >
-                                    <Settings2 size={18} />
-                                </button>
                             </div>
                         ))}
                     </div>
@@ -1143,7 +1160,11 @@ function FolderPanel({
                         <div className="folder-detail">
                             <div className="section-heading">
                                 <div>
-                                    <h3 title={selected.name}>
+                                    <h3
+                                        id="selected-folder-title"
+                                        tabIndex={-1}
+                                        title={selected.path}
+                                    >
                                         {selected.name}
                                     </h3>
                                     <p>
@@ -1155,15 +1176,65 @@ function FolderPanel({
                                         )}
                                         {globallyPaused
                                             ? "Background work paused globally"
-                                            : selected.status}
+                                            : selected.policy.paused
+                                              ? "This folder is paused. Resume it from More actions."
+                                              : selected.status}
                                     </p>
                                 </div>
-                                <button onClick={() => edit(selected)}>
+                                <button
+                                    aria-label={`Folder settings for ${selected.name}`}
+                                    onClick={() => edit(selected)}
+                                >
                                     <Settings2 size={16} />
-                                    Settings
+                                    Folder settings
                                 </button>
                             </div>
+                            <div className="folder-compression-summary">
+                                <strong>
+                                    Auto-compression is{" "}
+                                    {selected.policy.enabled ? "on" : "off"}.
+                                </strong>
+                                <p>
+                                    {selected.policy.enabled
+                                        ? "ZipXP checks existing, new and changed files while it runs."
+                                        : "Turn it on for existing and future files, or compress eligible files once."}
+                                </p>
+                                {Boolean(selected.scan?.nativeDefaults) && (
+                                    <p>
+                                        Windows can also compress new files here
+                                        using its own folder setting.
+                                    </p>
+                                )}
+                                <p>
+                                    {!selected.scan
+                                        ? "Scanning leaves your files as they are. An estimate will appear after the first scan."
+                                        : selected.scan.estimatedSaving > 0
+                                          ? `Estimated savings: ${bytes(selected.scan.estimatedSaving)}.`
+                                          : "No additional savings found in the files checked so far."}
+                                </p>
+                            </div>
                             <div className="actions wrap">
+                                <ActionButton
+                                    className={
+                                        selected.policy.enabled
+                                            ? undefined
+                                            : "primary"
+                                    }
+                                    confirmation
+                                    onClick={() =>
+                                        void act(() =>
+                                            request("setAutoCompression", {
+                                                rootId: selected.id,
+                                                enabled:
+                                                    !selected.policy.enabled,
+                                            }),
+                                        )
+                                    }
+                                >
+                                    Turn{" "}
+                                    {selected.policy.enabled ? "off" : "on"}{" "}
+                                    auto-compression
+                                </ActionButton>
                                 <ActionButton
                                     disabled={
                                         !selected.scan?.candidates ||
@@ -1181,49 +1252,16 @@ function FolderPanel({
                                                   ? "No files currently benefit from compression"
                                                   : "Preview a one-time compression job"
                                     }
-                                    className="primary"
                                     confirmation
                                     onClick={() =>
                                         void queue("Compress", selected.id)
                                     }
                                 >
                                     <Sparkles size={17} />
-                                    Compress now
+                                    Compress once
                                 </ActionButton>
-                                <ActionButton
-                                    onClick={() =>
-                                        void act(() =>
-                                            request("scan", {
-                                                rootId: selected.id,
-                                            }),
-                                        )
-                                    }
-                                >
-                                    <RefreshCw size={16} />
-                                    Scan again
-                                </ActionButton>
-                                <ActionButton
-                                    onClick={() =>
-                                        void act(() =>
-                                            request("pauseFolder", {
-                                                rootId: selected.id,
-                                                paused: !selected.policy.paused,
-                                            }),
-                                        )
-                                    }
-                                >
-                                    {selected.policy.paused ? (
-                                        <Play size={16} />
-                                    ) : (
-                                        <Pause size={16} />
-                                    )}
-                                    {selected.policy.paused
-                                        ? "Resume folder"
-                                        : "Pause folder"}
-                                </ActionButton>
-                                <MoreActions>
+                                {selected.canRestore && (
                                     <ActionButton
-                                        actionLabel="Restore original size"
                                         confirmation
                                         onClick={() =>
                                             void queue(
@@ -1232,15 +1270,43 @@ function FolderPanel({
                                             )
                                         }
                                     >
-                                        <div>
-                                            <strong>
-                                                Restore original size
-                                            </strong>
-                                            <small>
-                                                Uncompress files and turn off
-                                                automatic compression.
-                                            </small>
-                                        </div>
+                                        Restore files
+                                    </ActionButton>
+                                )}
+                                <button onClick={browse}>
+                                    Browse files <ArrowUpRight size={16} />
+                                </button>
+                                <MoreActions>
+                                    <ActionButton
+                                        onClick={() =>
+                                            void act(() =>
+                                                request("scan", {
+                                                    rootId: selected.id,
+                                                }),
+                                            )
+                                        }
+                                    >
+                                        <RefreshCw size={16} /> Scan again
+                                    </ActionButton>
+                                    <ActionButton
+                                        onClick={() =>
+                                            void act(() =>
+                                                request("pauseFolder", {
+                                                    rootId: selected.id,
+                                                    paused: !selected.policy
+                                                        .paused,
+                                                }),
+                                            )
+                                        }
+                                    >
+                                        {selected.policy.paused ? (
+                                            <Play size={16} />
+                                        ) : (
+                                            <Pause size={16} />
+                                        )}
+                                        {selected.policy.paused
+                                            ? "Resume folder"
+                                            : "Pause folder"}
                                     </ActionButton>
                                     <ActionButton
                                         actionLabel="Turn off Windows compression"
@@ -1303,10 +1369,9 @@ function FolderPanel({
                                     <div className="message warning">
                                         <AlertCircle size={17} />
                                         <span>
-                                            Partial scan ·{" "}
-                                            {selected.scan.unknown} unknown ·{" "}
-                                            {selected.scan.errors} errors.
-                                            Unreadable items are left out.
+                                            Some items were skipped or couldn’t
+                                            be checked. Use Browse files to see
+                                            details.
                                         </span>
                                     </div>
                                 )}
@@ -1314,11 +1379,6 @@ function FolderPanel({
                     )}
                 </>
             )}
-            <div className="card-note">
-                <ShieldCheck size={17} />
-                New folders are analysis only. Settings controls automatic
-                compression; More actions includes restore.
-            </div>
         </section>
     );
 }
@@ -1532,7 +1592,9 @@ function InsightsPage({
                                 onChange={(e) =>
                                     setSort(
                                         e.target.value as
-                                            "allocated" | "logical" | "name",
+                                            | "allocated"
+                                            | "logical"
+                                            | "name",
                                     )
                                 }
                             >
@@ -2269,8 +2331,8 @@ function PolicyDialog({
                                         Automatically compress files
                                     </strong>
                                     <small id="auto-compress-hint">
-                                        Compress eligible files when they’re
-                                        added or changed.
+                                        Compress eligible existing files, plus
+                                        files you add, copy or change later.
                                     </small>
                                 </span>
                             </label>
@@ -2297,7 +2359,7 @@ function PolicyDialog({
                                     set("runOnBattery", e.target.checked)
                                 }
                             />
-                            Allow work on battery power
+                            Allow compression and restores on battery power
                         </label>
                         {(folder.scan?.nativeDefaults ?? 0) > 0 && (
                             <div className="message warning">

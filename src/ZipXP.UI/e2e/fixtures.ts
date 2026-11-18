@@ -22,6 +22,7 @@ export const snapshot: Snapshot = {
         path: `C:\\Users\\Kiran\\${name}`,
         policy: { ...policy, enabled: i === 0, paused: i === 2 },
         status: i === 2 ? "Paused" : "Watching for changes",
+        canRestore: i === 0,
         scan: {
             utc: new Date().toISOString(),
             logical: (10 - i * 2) * gb,
@@ -61,7 +62,7 @@ export const snapshot: Snapshot = {
     startup: false,
     status: "Watching for changes",
     currentFile: null,
-    original: 24 * gb,
+    savings: { delta: 1478656 * 2, measured: 4 },
     allocated: 15 * gb,
     unknown: 0,
     volumes: [{ name: "Local Disk (C:)", total: 512 * gb, free: 124.8 * gb }],

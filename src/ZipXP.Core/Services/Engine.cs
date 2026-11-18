@@ -110,12 +110,17 @@ public sealed class Engine : IAsyncDisposable
             scan.Summary.NativeDefaults, scan.Summary.Coverage);
     });
 
+    public static IEnumerable<FileRecord> RestorableFiles(ManagedFolder root, IEnumerable<Observation> entries) =>
+        Eligible(entries, root, "Decompress");
+
     private static IEnumerable<FileRecord> Eligible(IEnumerable<Observation> entries, ManagedFolder root, string operation) =>
-        entries.Where(o => o.File != null && !Rules.Excluded(Path.GetRelativePath(root.Path, o.Path), root.Policy))
-            .Select(o => o.File!).Where(f => operation == "ClearDefault"
-                ? f.Directory && f.Compressed && Rules.AttributeReason(f.Attributes) == null
-                : !f.Directory && f.Compressed == (operation == "Decompress") &&
-                    Rules.Eligibility(f, root.Policy, operation == "Compress", DateTime.UtcNow) == null);
+        entries.Where(o => o.File is { } f &&
+                (operation == "ClearDefault"
+                    ? f.Directory && f.Compressed && Rules.AttributeReason(f.Attributes) == null
+                    : !f.Directory && f.Compressed == (operation == "Decompress") &&
+                        Rules.Eligibility(f, root.Policy, operation == "Compress", DateTime.UtcNow) == null) &&
+                !Rules.Excluded(Path.GetRelativePath(root.Path, o.Path), root.Policy))
+            .Select(o => o.File!);
 
     private static string DecisionKey(FileRecord file, string operation) => operation == "Compress" ? file.Fingerprint : file.Fingerprint + ":" + operation;
 
