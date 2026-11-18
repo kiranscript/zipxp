@@ -82,6 +82,14 @@ internal static class Program
 
     private static async Task Run(string fixture, string state)
     {
+        var storageItems = Enumerable.Range(0, 501).Select(i => new StorageItem($"C:\\fixture\\{i:D3}.txt", $"{i:D3}.txt", false, 1024 + i, 1024 + i, false, ""))
+            .Append(new StorageItem(@"C:\fixture\aaa-compressed.txt", "aaa-compressed.txt", false, 100_000, 1, true, "")).ToArray();
+        var byUsed = StorageInsights.CreatePage(storageItems, "allocated");
+        var byOriginal = StorageInsights.CreatePage(storageItems, "logical");
+        var byName = StorageInsights.CreatePage(storageItems, "name");
+        Check(byUsed.TotalRows == 502 && byUsed.Rows.Count == 500 && !byUsed.Rows.Any(i => i.Name == "aaa-compressed.txt"), "storage response stays bounded and reports the complete match count");
+        Check(byOriginal.Rows[0].Name == "aaa-compressed.txt" && byOriginal.Rows[0].Logical == 100_000, "original-size sorting includes compressed files beyond the allocated-size cutoff");
+        Check(byName.Rows[0].Name == "000.txt" && byName.Rows[499].Name == "499.txt", "name sorting orders the complete set before the response bound");
         Check(Marshal.SizeOf<NativeFiles.StandardInfo>() == 24 && Marshal.OffsetOf<NativeFiles.StandardInfo>(nameof(NativeFiles.StandardInfo.Directory)).ToInt32() == 21, "correct native standard-info layout");
         var policy = new FolderPolicy { QuietSeconds = 0, CooldownSeconds = 0, RunOnBattery = true };
         policy.Validate();

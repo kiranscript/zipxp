@@ -16,10 +16,21 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/ZipXP.UI/package-lock.json
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
       - name: Build
         run: dotnet build ZipXP.slnx --nologo -warnaserror
+      - name: Test React interface
+        working-directory: src/ZipXP.UI
+        run: |
+          npm test
+          npx playwright install chromium
+          npm run test:ui
       - name: Run checks
         run: dotnet run --project tests/ZipXP.Checks/ZipXP.Checks.csproj --no-build

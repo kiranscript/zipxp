@@ -30,6 +30,33 @@ for arg in "$@"; do
 done
 if (( fresh && reset )); then echo 'Use either --fresh or --reset, not both.' >&2; exit 2; fi
 
+# Noninteractive shells may not load NVM, and Windows npm can appear on WSL's PATH.
+# Find a supported Linux Node and always pair it with npm from the same installation.
+node_exe=""
+node_candidates=()
+if [[ -n "${ZIPXP_NODE_EXE:-}" ]]; then
+    node_candidates+=("$ZIPXP_NODE_EXE")
+else
+    node_candidates+=("$(command -v node || true)")
+    while IFS= read -r candidate; do node_candidates+=("$candidate"); done < <(
+        printf '%s\n' "${NVM_DIR:-$HOME/.nvm}"/versions/node/*/bin/node | sort -Vr
+    )
+fi
+for candidate in "${node_candidates[@]}"; do
+    [[ -x "$candidate" ]] || continue
+    if resolved_node="$("$candidate" -e 'const [major, minor] = process.versions.node.split(".").map(Number); if (process.platform !== "linux" || major < 22 || (major === 22 && minor < 12)) process.exit(1); process.stdout.write(process.execPath);' 2>/dev/null)"; then
+        if [[ -f "$(dirname -- "$resolved_node")/npm" ]]; then node_exe="$resolved_node"; break; fi
+    fi
+done
+if [[ -z "$node_exe" ]]; then
+    echo 'Could not find Linux Node.js 22.12+ with npm. Install it in WSL, or set ZIPXP_NODE_EXE to its node executable.' >&2
+    exit 1
+fi
+node_bin="$(dirname -- "$node_exe")"
+export PATH="$node_bin:$PATH"
+echo "Building React with Node $("$node_exe" --version) ($node_exe)"
+(cd "$repo_root/src/ZipXP.UI" && "$node_exe" "$node_bin/npm" ci --no-fund --no-audit && "$node_exe" "$node_bin/npm" run build)
+
 win_path() { powershell.exe -NoProfile -Command "$1" </dev/null | tr -d '\r'; }
 
 if (( rebuild )); then
@@ -53,7 +80,7 @@ elif (( reset )); then
     echo 'Saved data erased.'
 fi
 
-"$windows_dotnet" build "$(wslpath -w "$repo_root/src/ZipXP.App/ZipXP.App.csproj")" --nologo
+"$windows_dotnet" build "$(wslpath -w "$repo_root/src/ZipXP.App/ZipXP.App.csproj")" -p:BuildReact=false --nologo
 
 # Run the app as a child so Ctrl+C (or a terminal close / kill) can shut it down.
 # The app is a Windows GUI process: it has no console of its own, so a plain Ctrl+C can

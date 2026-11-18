@@ -10,4 +10,29 @@
   </PropertyGroup>
   <ItemGroup><Resource Include="Assets\zipxp.ico" /></ItemGroup>
   <ItemGroup><ProjectReference Include="../ZipXP.Core/ZipXP.Core.csproj" /></ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
+    <ReactSource Include="../ZipXP.UI/src/**/*;../ZipXP.UI/index.html;../ZipXP.UI/tsconfig.json;../ZipXP.UI/package.json;../ZipXP.UI/package-lock.json" />
+  </ItemGroup>
+  <PropertyGroup>
+    <BuildReact Condition="'$(BuildReact)' == ''">true</BuildReact>
+    <NpmCommand Condition="'$(OS)' == 'Windows_NT'">npm.cmd</NpmCommand>
+    <NpmCommand Condition="'$(OS)' != 'Windows_NT'">npm</NpmCommand>
+  </PropertyGroup>
+  <Target Name="BuildReactAssets" BeforeTargets="PrepareForBuild" Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildReact)' == 'true'"
+          Inputs="@(ReactSource)" Outputs="../ZipXP.UI/dist/index.html">
+    <Exec Command="$(NpmCommand) ci --no-fund --no-audit" WorkingDirectory="../ZipXP.UI" />
+    <Exec Command="$(NpmCommand) run build" WorkingDirectory="../ZipXP.UI" />
+  </Target>
+  <Target Name="IncludeReactAssets" BeforeTargets="AssignTargetPaths" DependsOnTargets="BuildReactAssets" Condition="'$(DesignTimeBuild)' != 'true'">
+    <Error Condition="!Exists('../ZipXP.UI/dist/index.html')" Text="React assets are missing. Run npm ci and npm run build in src/ZipXP.UI." />
+    <ItemGroup>
+      <ReactAsset Include="../ZipXP.UI/dist/**/*" />
+      <Content Include="@(ReactAsset)">
+        <Link>UI/%(ReactAsset.RecursiveDir)%(ReactAsset.Filename)%(ReactAsset.Extension)</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </Content>
+    </ItemGroup>
+  </Target>
 </Project>
