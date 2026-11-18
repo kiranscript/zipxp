@@ -30,7 +30,6 @@
                                    ToolTip="Finishes the file in progress, then closes ZipXP completely. Closing the window on its own keeps ZipXP working in the background." />
             </StackPanel>
             <StackPanel>
-                <TextBlock Text="WORKSPACE" Style="{StaticResource Muted}" FontSize="11" FontWeight="SemiBold" Margin="16,0,0,10" />
                 <local:GlyphButton x:Name="NavOverview" Content="Overview" Glyph="&#xE80F;" Tag="0" Click="Navigate_Click" Style="{StaticResource NavButton}" />
                 <local:GlyphButton x:Name="NavFolders" Content="Managed folders" Glyph="&#xE8B7;" Tag="1" Click="Navigate_Click" Style="{StaticResource NavButton}" />
                 <local:GlyphButton x:Name="NavInsights" Content="Storage insights" Glyph="&#xEB05;" Tag="2" Click="Navigate_Click" Style="{StaticResource NavButton}" />
@@ -55,7 +54,7 @@
                         <local:GlyphButton x:Name="PauseButton" Content="Pause all" Glyph="&#xE103;" Click="Pause_Click"
                                            Margin="0,0,10,0" ToolTip="Pause or resume all background work. The file in progress finishes first." />
                         <local:GlyphButton Content="Add folder…" Glyph="&#xE8F4;" Click="Add_Click" Style="{StaticResource PrimaryButton}"
-                                           ToolTip="Pick a folder to scan. Nothing is changed until you turn on compression." />
+                                           ToolTip="Choose a folder to scan for possible savings." />
                     </StackPanel>
                 </Grid>
 
@@ -97,12 +96,11 @@
                                         <TextBlock Text="&#xE8B7;" Style="{StaticResource Glyph}" FontSize="28" DockPanel.Dock="Left" VerticalAlignment="Top" Margin="0,2,16,0"
                                                    Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
                                         <StackPanel VerticalAlignment="Center">
-                                            <TextBlock Text="Welcome to ZipXP" Style="{StaticResource CardTitle}" />
+                                            <TextBlock Text="See how much space you could save" Style="{StaticResource CardTitle}" />
                                             <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,0"
-                                                       MaxWidth="720" HorizontalAlignment="Left" Text="Choose a folder, such as Documents or a project folder. ZipXP shows how much space it could save. Nothing is changed until you say so, and compression can be undone at any time." />
+                                                       MaxWidth="720" HorizontalAlignment="Left" Text="Add a folder to get an estimate. The scan leaves your files as they are. Afterward, you can compress the folder once or turn on auto-compression for existing and future files." />
                                             <WrapPanel Margin="0,14,0,0">
-                                                <local:GlyphButton Content="Add folder…" Glyph="&#xE8F4;" Click="Add_Click" Style="{StaticResource PrimaryButton}" Margin="0,0,16,0" />
-                                                <TextBlock Text="or start with:" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                                <TextBlock Text="Quick add" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,12,0" />
                                                 <Button Content="Documents" Tag="Documents" Click="QuickAdd_Click" Margin="0,0,8,0" />
                                                 <Button Content="Downloads" Tag="Downloads" Click="QuickAdd_Click" Margin="0,0,8,0" />
                                                 <Button Content="Desktop" Tag="Desktop" Click="QuickAdd_Click" />
@@ -110,69 +108,45 @@
                                         </StackPanel>
                                     </DockPanel>
                                 </Border>
-                                <Border x:Name="WelcomeSteps" Style="{StaticResource Card}" Margin="0,0,0,12" Visibility="Collapsed">
-                                    <StackPanel>
-                                        <TextBlock Text="How it works" Style="{StaticResource CardTitle}" Margin="0,0,0,14" />
-                                        <UniformGrid Columns="3">
-                                            <DockPanel Margin="0,0,16,0"><Border DockPanel.Dock="Left" Style="{StaticResource StepNumber}"><TextBlock Text="1" Style="{StaticResource StepDigit}" /></Border>
-                                                <StackPanel><TextBlock Text="Add a folder" Style="{StaticResource StepTitle}" /><TextBlock Style="{StaticResource Muted}" Margin="0,2,0,0" Text="ZipXP scans it. Nothing is changed yet." /></StackPanel></DockPanel>
-                                            <DockPanel Margin="0,0,16,0"><Border DockPanel.Dock="Left" Style="{StaticResource StepNumber}"><TextBlock Text="2" Style="{StaticResource StepDigit}" /></Border>
-                                                <StackPanel><TextBlock Text="See what you could save" Style="{StaticResource StepTitle}" /><TextBlock Style="{StaticResource Muted}" Margin="0,2,0,0" Text="An estimate appears on this page." /></StackPanel></DockPanel>
-                                            <DockPanel><Border DockPanel.Dock="Left" Style="{StaticResource StepNumber}"><TextBlock Text="3" Style="{StaticResource StepDigit}" /></Border>
-                                                <StackPanel><TextBlock Text="Turn on compression" Style="{StaticResource StepTitle}" /><TextBlock Style="{StaticResource Muted}" Margin="0,2,0,0" Text="Files open as usual. Undo any time." /></StackPanel></DockPanel>
-                                        </UniformGrid>
-                                    </StackPanel>
-                                </Border>
-                                <StackPanel x:Name="OverviewBody">
-                                    <!-- The headline: what the folders would take up uncompressed, versus what they take now. -->
-                                    <Border Style="{StaticResource Card}" Margin="0,0,0,12">
-                                        <StackPanel>
-                                            <DockPanel>
-                                                <TextBlock DockPanel.Dock="Right" Style="{StaticResource Muted}" VerticalAlignment="Center">
-                                                    <Hyperlink Click="ScopeLink_Click" ToolTip="Open Managed folders" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" TextDecorations="{x:Null}">
-                                                        <Hyperlink.Style><Style TargetType="Hyperlink"><Setter Property="TextDecorations" Value="{x:Null}" /><Style.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter Property="TextDecorations" Value="Underline" /></Trigger></Style.Triggers></Style></Hyperlink.Style>
-                                                        <Run x:Name="ScopeCard" Text="No folders added yet" /><Run Text="  ›" /></Hyperlink></TextBlock>
-                                                <TextBlock Text="All your folders together" Style="{StaticResource CardTitle}" />
-                                            </DockPanel>
-                                            <StackPanel Margin="0,14,0,0">
-                                                <TextBlock x:Name="SavedHeadline" Text="—" TextWrapping="Wrap" FontSize="32" FontWeight="SemiBold" VerticalAlignment="Bottom"
-                                                           Foreground="{DynamicResource SystemFillColorSuccessBrush}" />
-                                                <TextBlock x:Name="SavedPercent" TextWrapping="Wrap" Margin="0,6,0,0" VerticalAlignment="Bottom" FontSize="16" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                                            </StackPanel>
-                                            <Border Height="12" CornerRadius="6" Margin="0,14,0,10" Background="{DynamicResource ControlStrongFillColorDefaultBrush}">
-                                                <Grid x:Name="UsedBar" ClipToBounds="True">
-                                                    <Grid.ColumnDefinitions><ColumnDefinition x:Name="UsedCol" Width="*" /><ColumnDefinition x:Name="RestCol" Width="0" /></Grid.ColumnDefinitions>
-                                                    <Border Background="{DynamicResource AccentFillColorDefaultBrush}" CornerRadius="6,0,0,6" />
-                                                    <Border Grid.Column="1" Background="{DynamicResource SystemFillColorSuccessBrush}" CornerRadius="0,6,6,0" />
-                                                </Grid>
-                                            </Border>
+                                <StackPanel x:Name="OverviewBody" Visibility="Collapsed">
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                        <Border Style="{StaticResource Card}">
                                             <StackPanel>
-
-                                                <WrapPanel VerticalAlignment="Center">
-                                                    <Ellipse Width="10" Height="10" Fill="{DynamicResource AccentFillColorDefaultBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                                                    <TextBlock x:Name="AllocatedCard" Text="—" FontWeight="SemiBold" Margin="0,0,24,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                                                    <Ellipse Width="10" Height="10" Fill="{DynamicResource SystemFillColorSuccessBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                                                    <TextBlock x:Name="SavedLegend" Text="—" FontWeight="SemiBold" Margin="0,0,24,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                                                    <TextBlock x:Name="OriginalCard" Text="—" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                                <TextBlock Text="Estimated savings" Style="{StaticResource CardTitle}" />
+                                                <TextBlock x:Name="EstimateCard" Text="Waiting for scan" Style="{StaticResource StatValue}" />
+                                                <TextBlock x:Name="EstimateCaption" Style="{StaticResource Muted}" />
+                                                <WrapPanel Margin="0,12,0,0">
+                                                    <local:GlyphButton Content="Manage compression" Glyph="&#xE8B7;" Click="ScopeLink_Click" Style="{StaticResource PrimaryButton}" Margin="0,0,8,6" />
+                                                    <local:GlyphButton x:Name="OverviewCompressButton" Content="Compress all once…" Glyph="&#xE73F;" Click="CompressAll_Click"
+                                                                       Margin="0,0,0,6" ToolTip="Preview one-time compression for folders that aren't paused." />
                                                 </WrapPanel>
-                                                <local:GlyphButton x:Name="OverviewRestoreButton" Content="Restore all folders…" Glyph="&#xE7A7;" Margin="0,12,0,0" HorizontalAlignment="Left" Visibility="Collapsed" Click="RestoreAll_Click" Style="{StaticResource QuietButton}"
-                                                                   ToolTip="Uncompress every compressed file in all your folders so they take their original space again. No files are deleted, and automatic compression is turned off." />
                                             </StackPanel>
-                                        </StackPanel>
-                                    </Border>
+                                        </Border>
+                                        <Border Grid.Column="2" Style="{StaticResource Card}">
+                                            <StackPanel>
+                                                <TextBlock Text="Space saved by ZipXP" Style="{StaticResource CardTitle}" />
+                                                <TextBlock x:Name="MeasuredCard" Text="—" Style="{StaticResource StatValue}" />
+                                                <TextBlock x:Name="MeasuredCaption" Style="{StaticResource Muted}" />
+                                                <ComboBox x:Name="PeriodBox" SelectedIndex="1" SelectionChanged="Period_Changed" HorizontalAlignment="Left" Margin="0,12,0,0"
+                                                          AutomationProperties.Name="Time period" ToolTip="Time period for the savings ZipXP measured across all folders.">
+                                                    <ComboBoxItem Content="Last 7 days" /><ComboBoxItem Content="Last 30 days" /><ComboBoxItem Content="All time" />
+                                                </ComboBox>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
 
                                     <Grid Margin="0,0,0,12">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                                         <Border Grid.Column="0" Style="{StaticResource Card}">
                                             <StackPanel>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <Border x:Name="EstimateBadge" Style="{StaticResource IconBadge}"><TextBlock x:Name="EstimateGlyph" Text="&#xE73F;" Style="{StaticResource BadgeGlyph}" HorizontalAlignment="Center" /></Border>
-                                                    <TextBlock Text="Could still save" Style="{StaticResource StatLabel}" />
-                                                </StackPanel>
-                                                <TextBlock x:Name="EstimateCard" Text="—" Style="{StaticResource StatValue}" />
-                                                <TextBlock x:Name="EstimateCaption" Text="A rough estimate. Actual savings may differ." Style="{StaticResource Muted}" TextWrapping="Wrap" />
-                                                <local:GlyphButton x:Name="OverviewCompressButton" Content="Compress now…" Glyph="&#xE73F;" Click="CompressAll_Click" Style="{StaticResource PrimaryButton}"
-                                                                   HorizontalAlignment="Left" Margin="0,14,0,0" ToolTip="Compress everything worth compressing in all your folders, once. You can undo it later." />
+                                                <TextBlock Text="Folder sizes" Style="{StaticResource CardTitle}" />
+                                                <TextBlock x:Name="AllocatedCard" Text="—" Style="{StaticResource StatValue}" />
+                                                <TextBlock x:Name="OriginalCard" Style="{StaticResource Muted}" />
+                                                <TextBlock x:Name="ScopeCard" Style="{StaticResource Muted}" Margin="0,6,0,0" />
+                                                <local:GlyphButton x:Name="OverviewRestoreButton" Content="Restore compressed files…" Glyph="&#xE7A7;" Margin="0,12,0,0"
+                                                                   HorizontalAlignment="Left" Visibility="Collapsed" Click="RestoreAll_Click" Style="{StaticResource QuietButton}"
+                                                                   ToolTip="Preview restoring compressed files in your folders to their full size." />
                                             </StackPanel>
                                         </Border>
                                         <Border Grid.Column="2" Style="{StaticResource Card}">
@@ -206,7 +180,6 @@
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
-                                                <TextBlock x:Name="VolumesNote" Text="Free space on the whole drive, not just your ZipXP folders." Style="{StaticResource Muted}" FontSize="13" Margin="0,2,0,0" Visibility="Collapsed" />
                                             </StackPanel>
                                         </Border>
                                         <Border Grid.Column="4" Style="{StaticResource Card}">
@@ -216,11 +189,11 @@
                                                     <TextBlock Text="Right now" Style="{StaticResource StatLabel}" />
                                                 </StackPanel>
                                                 <TextBlock x:Name="ActivityCard" Text="Nothing waiting" Style="{StaticResource StatValue}" />
-                                                <TextBlock x:Name="WatchNote" Text="ZipXP is watching your folders for changes." Style="{StaticResource Muted}" />
+                                                <TextBlock x:Name="WatchNote" Style="{StaticResource Muted}" />
                                                 <StackPanel x:Name="StartupHint" Visibility="Collapsed" Margin="0,6,0,0">
                                                     <DockPanel>
                                                         <TextBlock DockPanel.Dock="Left" Text="&#xE7BA;" Style="{StaticResource Glyph}" FontSize="14" Margin="0,3,8,0" VerticalAlignment="Top" Foreground="{DynamicResource SystemFillColorCautionBrush}" />
-                                                        <TextBlock Text="Auto-compress pauses when ZipXP is closed." Style="{StaticResource Muted}" />
+                                                        <TextBlock Text="Auto-compression works while ZipXP is running." Style="{StaticResource Muted}" />
                                                     </DockPanel>
                                                     <Button Content="Start when I sign in" Click="StartupHint_Click" Margin="22,6,0,0" HorizontalAlignment="Left" />
                                                 </StackPanel>
@@ -232,20 +205,11 @@
                                     <Border Style="{StaticResource Card}">
                                         <StackPanel>
                                             <DockPanel>
-                                                <ComboBox x:Name="PeriodBox" DockPanel.Dock="Right" SelectedIndex="1" SelectionChanged="Period_Changed" VerticalAlignment="Center" Margin="8,0,0,0"
-                                                          AutomationProperties.Name="Time period" ToolTip="Time period for the space saved and the chart below.">
-                                                    <ComboBoxItem Content="Last 7 days" /><ComboBoxItem Content="Last 30 days" /><ComboBoxItem Content="All time" />
-                                                </ComboBox>
                                                 <ComboBox x:Name="ChartRootBox" DockPanel.Dock="Right" SelectionChanged="ChartRoot_Changed" VerticalAlignment="Center" Width="200"
-                                                          AutomationProperties.Name="Folder shown in the chart" DisplayMemberPath="Name" Visibility="Collapsed" />
-                                                <TextBlock Text="Space used over time" Style="{StaticResource CardTitle}" VerticalAlignment="Center" />
+                                                          AutomationProperties.Name="Folder shown in the chart" DisplayMemberPath="Name" SelectedValuePath="Id" Visibility="Collapsed" />
+                                                <TextBlock Text="Recent folder size scans" Style="{StaticResource CardTitle}" VerticalAlignment="Center" />
                                             </DockPanel>
                                             <TextBlock x:Name="HistoryCaption" Style="{StaticResource Muted}" Margin="0,4,0,2" />
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                                <TextBlock Text="Saved in this period: " Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                                <TextBlock x:Name="MeasuredCard" Text="—" FontWeight="SemiBold" Foreground="{DynamicResource SystemFillColorSuccessBrush}" />
-                                                <TextBlock x:Name="MeasuredCaption" Style="{StaticResource Muted}" Margin="4,0,0,0" />
-                                            </StackPanel>
                                             <Canvas x:Name="HistoryChart" Height="104" ClipToBounds="True" SizeChanged="Chart_SizeChanged" />
                                             <TextBlock x:Name="HistoryRange" Style="{StaticResource Muted}" FontSize="13" Margin="0,8,0,0" />
                                         </StackPanel>
@@ -258,41 +222,45 @@
                     <!-- Managed folders -->
                     <TabItem Header="Managed folders">
                         <Grid>
-                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-                            <WrapPanel x:Name="FolderActions" Margin="0,0,0,16">
-                                <WrapPanel.Resources>
-                                    <Style TargetType="local:GlyphButton" BasedOn="{StaticResource CommandButton}">
-                                        <Setter Property="Margin" Value="0,0,8,8" />
-                                    </Style>
-                                </WrapPanel.Resources>
-                                <local:GlyphButton Content="Scan now" Glyph="&#xE72C;" Click="Analyze_Click"
-                                                   ToolTip="Look through the selected folder again. Scanning never changes your files." />
-                                <local:GlyphButton Content="Settings…" Glyph="&#xE713;" Click="Policy_Click"
-                                                   ToolTip="Turn automatic compression on or off and choose which files it applies to." />
-                                <local:GlyphButton x:Name="FolderCompressButton" ToolTipService.ShowOnDisabled="True" Content="Compress now…" Glyph="&#xE73F;" Tag="Compress" Click="ScopeJob_Click"
-                                                   ToolTip="Compress the files worth compressing once, without turning on automatic compression." />
-                                <local:GlyphButton x:Name="FolderUndoButton" Margin="0,0,8,8" Style="{StaticResource QuietButton}" ToolTipService.ShowOnDisabled="True" Content="Restore…" Glyph="&#xE7A7;" Tag="Decompress" Click="ScopeJob_Click"
-                                                   ToolTip="Uncompress every file in the selected folder so it takes its full, original space again, and turn off automatic compression for it. No files are deleted." />
-                                <local:GlyphButton Content="More" Glyph="&#xE712;" Margin="0,0,0,8"
-                                        Click="More_Click" AutomationProperties.Name="More actions" ToolTip="More actions for the selected folder: pause it, or stop managing it">
-                                    <Button.ContextMenu>
-                                        <ContextMenu>
-                                            <MenuItem x:Name="FolderPauseItem" Header="Pause this folder" Click="FolderPause_Click"
-                                                      ToolTip="Pause or resume work in the selected folder only. Other folders carry on." />
-                                            <MenuItem Header="Turn off Windows' own folder compression…" Tag="ClearDefault" Click="ScopeJob_Click"
-                                                      ToolTip="Windows can compress every new file in a folder by itself. This switches that off so only ZipXP decides." />
-                                            <Separator />
-                                            <MenuItem Header="Stop managing this folder…" Click="Remove_Click"
-                                                      ToolTip="Removes the folder from ZipXP. Files already compressed stay compressed. To get the original size back, choose Restore first." />
-                                        </ContextMenu>
-                                    </Button.ContextMenu>
-                                </local:GlyphButton>
-                            </WrapPanel>
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                            <Border x:Name="FolderCard" Style="{StaticResource Card}" Margin="0,0,0,12" Visibility="Collapsed">
+                                <StackPanel>
+                                    <TextBlock x:Name="SelectedFolderTitle" Style="{StaticResource CardTitle}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock x:Name="SelectedFolderState" Style="{StaticResource Muted}" Margin="0,4,0,0" />
+                                    <TextBlock x:Name="FoldersNote" Style="{StaticResource Muted}" Margin="0,4,0,0" />
+                                    <WrapPanel x:Name="FolderActions" Margin="0,12,0,0">
+                                        <WrapPanel.Resources>
+                                            <Style TargetType="local:GlyphButton" BasedOn="{StaticResource CommandButton}">
+                                                <Setter Property="Margin" Value="0,0,8,6" />
+                                            </Style>
+                                        </WrapPanel.Resources>
+                                        <local:GlyphButton x:Name="FolderAutomationButton" Content="Turn on auto-compression…" Glyph="&#xE713;" Click="FolderAutomation_Click"
+                                                           Style="{StaticResource PrimaryButton}" Margin="0,0,8,6" />
+                                        <local:GlyphButton x:Name="FolderCompressButton" ToolTipService.ShowOnDisabled="True" Content="Compress once…" Glyph="&#xE73F;" Tag="Compress" Click="ScopeJob_Click" />
+                                        <local:GlyphButton x:Name="FolderUndoButton" Content="Restore files…" Glyph="&#xE7A7;" Tag="Decompress" Click="ScopeJob_Click"
+                                                           ToolTipService.ShowOnDisabled="True" ToolTip="Preview which compressed files ZipXP can restore to their full size." />
+                                        <local:GlyphButton Content="Folder settings…" Glyph="&#xE713;" Click="Policy_Click"
+                                                           ToolTip="Choose which files to compress and when ZipXP can work." />
+                                        <local:GlyphButton Content="More" Glyph="&#xE712;" Click="More_Click" AutomationProperties.Name="More actions">
+                                            <Button.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="Browse files" Click="BrowseFolder_Click" />
+                                                    <MenuItem Header="Scan again" Click="Analyze_Click" />
+                                                    <MenuItem x:Name="FolderPauseItem" Header="Pause this folder" Click="FolderPause_Click" />
+                                                    <MenuItem Header="Turn off Windows' own folder compression…" Tag="ClearDefault" Click="ScopeJob_Click" />
+                                                    <Separator />
+                                                    <MenuItem Header="Stop managing this folder…" Click="Remove_Click" />
+                                                </ContextMenu>
+                                            </Button.ContextMenu>
+                                        </local:GlyphButton>
+                                    </WrapPanel>
+                                </StackPanel>
+                            </Border>
                             <Border Grid.Row="1" Style="{StaticResource Card}" Padding="0">
                                 <Grid>
                                     <DataGrid x:Name="FoldersGrid" FrozenColumnCount="1" SelectionChanged="FolderGrid_Changed" AutomationProperties.Name="Managed folders list">
                                         <DataGrid.Columns>
-                                            <DataGridTemplateColumn Header="Folder" Width="4*" MinWidth="220" SortMemberPath="Name">
+                                            <DataGridTemplateColumn Header="Folder" Width="3*" MinWidth="160" SortMemberPath="Name">
                                                 <DataGridTemplateColumn.CellTemplate>
                                                     <DataTemplate>
                                                         <StackPanel Margin="12,6" VerticalAlignment="Center" ToolTip="{Binding Path}">
@@ -302,16 +270,14 @@
                                                     </DataTemplate>
                                                 </DataGridTemplateColumn.CellTemplate>
                                             </DataGridTemplateColumn>
-                                            <DataGridTemplateColumn Header="Auto-compress" Width="135" MinWidth="135" SortMemberPath="Mode">
+                                            <DataGridTemplateColumn Header="Auto-compression" Width="136" MinWidth="130" SortMemberPath="Mode">
                                                 <DataGridTemplateColumn.CellTemplate>
                                                     <DataTemplate><Border Style="{StaticResource Pill}"><TextBlock Text="{Binding Mode}" Style="{StaticResource PillText}" /></Border></DataTemplate>
                                                 </DataGridTemplateColumn.CellTemplate>
                                             </DataGridTemplateColumn>
-                                            <DataGridTextColumn Header="Original size" Binding="{Binding Size}" Width="120" MinWidth="120" ElementStyle="{StaticResource CellNumber}" HeaderStyle="{StaticResource NumberHeader}" />
-                                            <DataGridTextColumn Header="Used now" Binding="{Binding OnDisk}" Width="105" MinWidth="105" ElementStyle="{StaticResource CellNumber}" HeaderStyle="{StaticResource NumberHeader}" />
-                                            <DataGridTextColumn Header="Saved" Binding="{Binding SavedText}" Width="130" MinWidth="130" ElementStyle="{StaticResource CellNumber}" HeaderStyle="{StaticResource NumberHeader}" />
-                                            <DataGridTextColumn Header="Could still save" Binding="{Binding Compressible}" Width="135" MinWidth="135" ElementStyle="{StaticResource CellNumber}" HeaderStyle="{StaticResource NumberHeader}" />
-                                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="*" MinWidth="110" ElementStyle="{StaticResource CellMuted}" />
+                                            <DataGridTextColumn Header="Estimated savings" Binding="{Binding Estimate}" SortMemberPath="Scan.EstimatedSaving" Width="136" MinWidth="124" ElementStyle="{StaticResource CellNumber}" HeaderStyle="{StaticResource NumberHeader}" />
+                                            <DataGridTextColumn Header="Size on disk" Binding="{Binding OnDisk}" SortMemberPath="Scan.Allocated" Width="108" MinWidth="100" ElementStyle="{StaticResource CellNumber}" HeaderStyle="{StaticResource NumberHeader}" />
+                                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="2*" MinWidth="110" ElementStyle="{StaticResource CellMuted}" />
                                         </DataGrid.Columns>
                                     </DataGrid>
                                     <StackPanel x:Name="EmptyFolders" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="440" Visibility="Collapsed">
@@ -319,14 +285,10 @@
                                                    Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                                         <TextBlock Text="No folders yet" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,16,0,8" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                                         <TextBlock Style="{StaticResource Muted}" TextAlignment="Center"
-                                                   Text="Add a folder and ZipXP will show how much space it could save. Nothing is changed until you turn on compression for it." />
-                                        <local:GlyphButton Content="Add folder…" Glyph="&#xE8F4;" Click="Add_Click" Style="{StaticResource PrimaryButton}"
-                                                           HorizontalAlignment="Center" Margin="0,20,0,0" />
+                                                   Text="Use Add folder to scan for possible savings. You can choose whether to compress it after the scan." />
                                     </StackPanel>
                                 </Grid>
                             </Border>
-                            <TextBlock x:Name="FoldersNote" Grid.Row="2" Style="{StaticResource Muted}" FontSize="13" Margin="0,8,0,0"
-                                       Text="New folders are only scanned. Turn on Auto-compress in Settings, or choose Compress now. You can undo it at any time." />
                         </Grid>
                     </TabItem>
 
@@ -400,9 +362,8 @@
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
-                                        <DataGridTextColumn Header="Original size" Binding="{Binding Size}" SortMemberPath="LogicalBytes" Width="125" MinWidth="125" ElementStyle="{StaticResource CellNumber}" HeaderStyle="{StaticResource NumberHeader}" />
-                                        <DataGridTextColumn Header="Used now" Binding="{Binding OnDisk}" SortMemberPath="AllocatedBytes" Width="110" MinWidth="110" ElementStyle="{StaticResource CellNumber}" HeaderStyle="{StaticResource NumberHeader}" />
-                                        <DataGridTextColumn Header="Saved" Binding="{Binding Saved}" SortMemberPath="SavedBytes" Width="135" MinWidth="135" ElementStyle="{StaticResource CellNumber}" HeaderStyle="{StaticResource NumberHeader}" />
+                                        <DataGridTextColumn Header="File size" Binding="{Binding Size}" SortMemberPath="LogicalBytes" Width="125" MinWidth="125" ElementStyle="{StaticResource CellNumber}" HeaderStyle="{StaticResource NumberHeader}" />
+                                        <DataGridTextColumn Header="Size on disk" Binding="{Binding OnDisk}" SortMemberPath="AllocatedBytes" Width="110" MinWidth="110" ElementStyle="{StaticResource CellNumber}" HeaderStyle="{StaticResource NumberHeader}" />
                                         <DataGridTextColumn x:Name="NotesColumn" Header="Status" Binding="{Binding Notes}" Width="2*" MinWidth="160" ElementStyle="{StaticResource CellMuted}" />
                                     </DataGrid.Columns>
                                 </DataGrid>

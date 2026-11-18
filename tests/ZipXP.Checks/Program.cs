@@ -58,6 +58,9 @@ internal static class Program
             var data = Path.GetFullPath(args[1]);
             var demo = Path.Combine(data, "demo-fixture"); Directory.CreateDirectory(demo);
             Text(Path.Combine(demo, "analyze-only.txt"));
+            var alreadyCompressed = Path.Combine(demo, "already-compressed.txt");
+            Text(alreadyCompressed, 2 * 1024 * 1024);
+            using (var handle = NativeFiles.Open(alreadyCompressed, true)) NativeFiles.SetCompression(handle, true);
             using var seedStore = new Store(Path.Combine(data, "storage.sqlite3"));
             await using var seedEngine = new Engine(seedStore);
             var root = await seedEngine.AddAsync(demo);
@@ -272,6 +275,12 @@ internal static class Program
         store.SaveRoot(root);
         var sample = new FileRecord(@"C:\disposable-queue-model\file.txt", "fake:0", 65536, 65536, DateTime.UtcNow.ToFileTimeUtc(), FileAttributes.Normal, 1);
         Check(store.Enqueue(root, sample, "Compress", false) && !store.Enqueue(root, sample, "Compress", false), "persistent queue deduplicates the same file identity");
+        var firstRun = store.RunStart(root.Id);
+        Check(firstRun != null && store.RunStart("another-folder") == null, "the first job queued for an idle folder starts a run");
+        store.Cancel(root.Id, all: true);
+        Check(!store.HasActiveJobs(), "cancelling queued work leaves nothing active");
+        Thread.Sleep(5);
+        Check(store.Enqueue(root, sample, "Compress", false) && store.RunStart(root.Id) > firstRun, "work queued after the previous run ended starts a new run");
         for (var i = 1; i <= Store.QueueLimit; i++) store.Enqueue(root, sample with { Identity = "fake:" + i, Path = root.Path + "\\" + i }, "Compress", false);
         Check(store.Jobs().Count(j => j.Pending) == Store.QueueLimit, "persistent queue enforces its 2,000-job bound without touching fake file paths");
     }

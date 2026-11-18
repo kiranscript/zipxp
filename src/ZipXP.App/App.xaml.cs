@@ -5,6 +5,7 @@ using System.Security.Principal;
 using System.Text;
 using System.Windows;
 using System.Windows.Threading;
+using ZipXP.Core;
 using ZipXP.Core.Persistence;
 using ZipXP.Core.Services;
 using Forms = System.Windows.Forms;
@@ -18,6 +19,11 @@ public partial class App : Application
     private RegisteredWaitHandle? activationWait;
     private Forms.NotifyIcon? tray;
     private Store? store;
+    private DispatcherTimer? savingsTimer;
+    private bool hadPendingWork;
+    private volatile bool checkingSavings;
+    private long notifiedSavings;
+    private DateTime lastCompletionBalloon = DateTime.MinValue;
     public Engine Engine { get; private set; } = null!;
     public bool Exiting { get; private set; }
     public static App Instance => (App)Current;
@@ -42,6 +48,7 @@ public partial class App : Application
             try { Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.BelowNormal; } catch (System.ComponentModel.Win32Exception) { }
             MainWindow = e.Args.Contains("--native-ui") ? new MainWindow() : new ReactWindow();
             CreateTray();
+            WatchSavings();
             Engine.Start();
             if (!e.Args.Contains("--tray")) ShowMain();
             // Dev launcher (scripts/dev.sh) creates this file on Ctrl+C to ask for a clean shutdown.
@@ -93,6 +100,68 @@ public partial class App : Application
         tray.DoubleClick += (_, _) => Dispatcher.BeginInvoke(ShowMain);
     }
 
+    /// <summary>Keeps the tray tooltip showing the running total and announces finished work and a weekly summary.</summary>
+    private void WatchSavings()
+    {
+        notifiedSavings = store!.MeasuredSince(DateTime.MinValue).Delta;
+        UpdateTrayTip(notifiedSavings);
+        savingsTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+        savingsTimer.Tick += (_, _) =>
+        {
+            if (Exiting || checkingSavings) return;
+            checkingSavings = true;
+            // Database reads can wait behind the engine, so keep them off the UI thread. Notifications are a
+            // nicety: a transient database error must never disturb the app.
+            _ = Task.Run(() => { try { return CheckSavings(); } catch (Exception) { return null; } })
+                .ContinueWith(t => { checkingSavings = false; if (t.Result is { } apply && !Exiting) apply(); }, TaskScheduler.FromCurrentSynchronizationContext());
+        };
+        savingsTimer.Start();
+    }
+
+    private void UpdateTrayTip(long total)
+    {
+        if (tray != null) tray.Text = total > 0 ? $"ZipXP · {Display.Bytes(total)} saved" : "ZipXP";
+    }
+
+    /// <summary>Runs on a worker thread; returns the tray updates to apply on the UI thread.</summary>
+    private Action? CheckSavings()
+    {
+        var pending = store!.HasActiveJobs();
+        var total = store.MeasuredSince(DateTime.MinValue).Delta;
+        var watching = false;
+        Dispatcher.Invoke(() => watching = MainWindow is { IsVisible: true, IsActive: true });
+        string? balloonTitle = null, balloonText = null;
+        if (pending && !hadPendingWork) notifiedSavings = total; // measure each run from its own start
+        if (hadPendingWork && !pending)
+        {
+            var gained = total - notifiedSavings;
+            // Background auto-compression finishes many small runs, so it needs a much bigger gain to be worth a balloon.
+            var bar = store.Roots().Any(r => r.Policy.Enabled) ? 100L * 1024 * 1024 : 1024 * 1024;
+            if (gained >= bar && !watching && DateTime.UtcNow - lastCompletionBalloon > TimeSpan.FromMinutes(30))
+            {
+                balloonTitle = "ZipXP finished compressing"; balloonText = $"Saved {Display.Bytes(gained)}. Your files open as usual.";
+                lastCompletionBalloon = DateTime.UtcNow;
+            }
+            notifiedSavings = total;
+        }
+        hadPendingWork = pending;
+
+        // At most one summary a week, and only when ZipXP actually saved something.
+        var last = DateTime.TryParse(store.Setting("lastDigestUtc"), null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsed) ? parsed : (DateTime?)null;
+        if (last == null) store.Setting("lastDigestUtc", DateTime.UtcNow.ToString("O"));
+        else if (DateTime.UtcNow - last.Value >= TimeSpan.FromDays(7))
+        {
+            var week = store.MeasuredSince(DateTime.UtcNow.AddDays(-7)).Delta;
+            store.Setting("lastDigestUtc", DateTime.UtcNow.ToString("O"));
+            if (week > 0 && balloonTitle == null) { balloonTitle = "Your ZipXP weekly summary"; balloonText = $"ZipXP saved {Display.Bytes(week)} this week."; }
+        }
+        return () =>
+        {
+            UpdateTrayTip(total);
+            if (balloonTitle != null) tray?.ShowBalloonTip(7000, balloonTitle, balloonText ?? "", Forms.ToolTipIcon.Info);
+        };
+    }
+
     public void ShowMain()
     {
         if (MainWindow == null || Exiting) return;
@@ -112,6 +181,7 @@ public partial class App : Application
         Exiting = true;
         if (MainWindow is MainWindow window) window.ShowClosingStatus();
         if (MainWindow is ReactWindow reactWindow) reactWindow.ShowClosingStatus();
+        savingsTimer?.Stop();
         if (Engine != null) await Engine.DisposeAsync();
         tray?.Dispose(); tray = null;
         Shutdown();

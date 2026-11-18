@@ -91,7 +91,7 @@
 <pre><span class="p">PS&gt; </span>git clone https://github.com/kiranscript/zipxp.git
 <span class="p">PS&gt; </span>cd zipxp
 <span class="p">PS&gt; </span>dotnet run --project src/ZipXP.App/ZipXP.App.csproj</pre>
-      <p>Then choose <em>Managed folders → Add folder…</em>, pick a test folder that holds copies of some documents, and read the estimate.</p>
+      <p>Then choose <em>Managed folders → Add folder…</em>, pick a folder (on first launch, Overview suggests a code folder or Documents), and read the estimate.</p>
       <h3>From WSL</h3>
       <p>From the repository root:</p>
 <pre><span class="p">$ </span>./scripts/dev.sh</pre>
@@ -112,20 +112,20 @@
     <section id="using">
       <h2>Using ZipXP</h2>
       <ol>
-        <li><strong>Add a folder.</strong> Select <em>Managed folders → Add folder…</em> and choose a local fixed NTFS folder, such as <code>C:\zipxp-test</code>. This starts a read-only analysis. WSL and UNC folders aren't supported.</li>
+        <li><strong>Add a folder.</strong> Select <em>Managed folders → Add folder…</em> and choose any local fixed NTFS folder. This starts a read-only analysis. WSL and UNC folders aren't supported.</li>
         <li><strong>Inspect.</strong> Folder rows show policy, known logical and allocated totals, candidate bytes, status, scan time, and how many directories have Windows' own compression flag set. Double-click a folder in <em>Insights</em> to drill down, or choose <em>Largest files</em>.</li>
         <li><strong>Turn on automation.</strong> Open <em>Folder settings</em>. Subfolder inclusion and battery behavior are on the first screen. Exclusions, size and benefit thresholds, quiet period, cooldown, schedule and free-space reserve are under <em>Advanced options</em>.</li>
         <li><strong>Let it run.</strong> Eligible files are queued. New, copied-in, replaced and changed files are found through notifications and periodic scans. The recommended quiet period is 60 seconds, and reconciliation runs every two minutes. Busy files retry with backoff.</li>
         <li><strong>Close the window.</strong> The tray worker keeps running. <em>Start when I sign in</em> registers the current launch command. <em>Pause all</em> or <em>Pause folder</em> stops new operations after the current one. <em>Quit ZipXP</em> finishes the current file, then exits and keeps pending work saved.</li>
         <li><strong>Review activity.</strong> Search and filter outcomes, copy diagnostics, and retry selected failures. Retrying doesn't turn disabled automatic policies back on.</li>
       </ol>
-      <div class="note"><div><b>Explicit by design.</b> Adding a folder never compresses it. <em>Compress now</em> is a one-off job that doesn't turn on future automation. Every recursive action shows a scope preview first.</div></div>
+      <div class="note"><div><b>Explicit by design.</b> Adding a folder never compresses it. <em>Compress once</em> is a one-off job that doesn't turn on future automation. Every recursive action shows a scope preview first.</div></div>
     </section>
 
     <section id="undo">
       <h2>Undo &amp; stopping</h2>
       <ul>
-        <li><strong>Restore original size…</strong> (Overview, Managed folders, or Storage insights) decompresses files so they take their full space again. Nothing is deleted. It first turns off automatic compression for that folder and cancels pending compression.</li>
+        <li><strong>Restore files…</strong> in Managed folders (also available in Overview and Storage insights) decompresses files so they take their full space again. Nothing is deleted. It first turns off automatic compression for that folder and cancels pending compression.</li>
         <li><strong>Turn off Windows' own folder compression</strong> (More menu) is a separate job that clears the per-folder flags that make Windows compress new files automatically. It only touches directories within the policy scope. Files already compressed stay compressed.</li>
         <li><strong>Stop managing this folder</strong> (More menu) removes the folder, its observations and its future jobs. Your files and their folders' compression flags stay as they are. Past measurements are kept.</li>
       </ul>

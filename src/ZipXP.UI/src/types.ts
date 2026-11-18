@@ -25,6 +25,35 @@ export interface Scan {
     complete: boolean;
     nativeDefaults: number;
 }
+export interface SkipSummary {
+    alreadyCompressed: { files: number; logical: number; allocated: number };
+    tooSmall: number;
+    lowBenefit: number;
+    excluded: number;
+    other: number;
+}
+export interface Suggestion {
+    path: string;
+    name: string;
+    note: string;
+}
+export interface Run {
+    operation: "Compress" | "Decompress" | "ClearDefault";
+    startedUtc: string;
+    total: number;
+    pending: number;
+    failed: number;
+    skipped: number;
+    savedSoFar: number;
+    phase: "working" | "waiting" | "queued" | "done";
+    finishedUtc?: string | null;
+    waiting: string | null;
+    currentFile: string | null;
+}
+export interface PickedFolder {
+    path: string;
+    name: string;
+}
 export interface Folder {
     id: string;
     name: string;
@@ -32,6 +61,8 @@ export interface Folder {
     policy: Policy;
     status: string;
     scan: Scan | null;
+    skips?: SkipSummary | null;
+    run?: Run | null;
     canRestore: boolean;
 }
 export interface Job {
@@ -86,7 +117,17 @@ export interface Commands {
         };
         result: Insights;
     };
-    addFolder: { args: Record<string, never>; result: string | null };
+    suggestions: { args: Record<string, never>; result: Suggestion[] };
+    chooseFolder: {
+        args: Record<string, never>;
+        result: PickedFolder | null;
+    };
+    addFolder: {
+        args: { path?: string; autoCompress?: boolean };
+        result: string | null;
+    };
+    stop: { args: { rootId: string }; result: string };
+    discardPick: { args: Record<string, never>; result: string };
     scan: { args: { rootId: string }; result: string };
     pause: { args: { paused: boolean }; result: string };
     pauseFolder: { args: { rootId: string; paused: boolean }; result: string };

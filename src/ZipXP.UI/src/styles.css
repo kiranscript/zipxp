@@ -2070,3 +2070,173 @@ textarea {
     -webkit-line-clamp: 2;
     overflow: hidden;
 }
+
+/* Onboarding: suggested folders, measured-first hero, success card, skip details */
+.suggestions {
+    width: min(560px, 100%);
+    margin: 0 0 22px;
+    text-align: left;
+}
+.suggestions h3 {
+    font-size: 13px;
+    margin: 0 0 8px;
+    color: var(--muted);
+    font-weight: 600;
+}
+.suggestion-list {
+    display: grid;
+    gap: 8px;
+}
+.suggestion {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+}
+.suggestion small {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.savings.measured-first {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+}
+.savings.measured-first .savings-result {
+    order: -1;
+    border-left: 0;
+    padding-left: 0;
+    border-right: 1px solid var(--line);
+    padding-right: 20px;
+}
+.success-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+}
+.success-card p {
+    margin: 2px 0 0;
+    font-size: 12px;
+}
+.success-icon {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--line);
+}
+.skip-details {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--muted);
+}
+.skip-details summary {
+    cursor: pointer;
+}
+.skip-details ul {
+    margin: 6px 0 0;
+    padding-left: 18px;
+}
+@media (max-width: 760px) {
+    .savings.measured-first {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .savings.measured-first .savings-result {
+        border-right: 0;
+        border-top: 0;
+        border-bottom: 1px solid var(--line);
+        padding: 0 0 16px;
+    }
+    .suggestion,
+    .success-card {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+    .suggestion > button,
+    .success-card > button {
+        grid-column: 1 / -1;
+    }
+}
+
+/* Live progress and the add-folder choice */
+.run-card {
+    display: grid;
+    gap: 8px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+}
+.run-card p {
+    margin: 0;
+    font-size: 13px;
+}
+.run-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: baseline;
+}
+.run-head strong {
+    overflow-wrap: anywhere;
+}
+.run-bar {
+    height: 8px;
+    border-radius: 99px;
+    background: var(--accent-soft);
+    border: 1px solid var(--line);
+    overflow: hidden;
+}
+.run-bar span {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.6s ease;
+    min-width: 2px;
+}
+.pill.progress {
+    font-variant-numeric: tabular-nums;
+}
+.choice-list {
+    border: 0;
+    padding: 0;
+    margin: 0 0 12px;
+    min-width: 0;
+    display: grid;
+    gap: 10px;
+}
+.choice {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    cursor: pointer;
+}
+.choice:has(input:checked) {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+}
+.choice small {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .run-bar span {
+        transition: none;
+    }
+}

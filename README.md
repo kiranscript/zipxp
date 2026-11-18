@@ -52,7 +52,7 @@ dotnet run --project src/ZipXP.App/ZipXP.App.csproj
 
 If WebView2 is unavailable, pass `-- --native-ui` to the run command for the original WPF interface.
 
-Then choose **Managed folders → Add folder…**, pick a test folder that holds copies of some documents, and read the estimate. To build a package you can install, see [Install and uninstall](docs/install.md).
+On first launch ZipXP suggests folders that usually compress well, such as a code folder or Documents. Choose one (or **Choose a folder**) and read the estimate before deciding anything. To build a package you can install, see [Install and uninstall](docs/install.md).
 
 Storage insights shows which folders take the room and what was saved in each:
 
