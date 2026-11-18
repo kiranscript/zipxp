@@ -11,6 +11,52 @@ const nav = (page: import("@playwright/test").Page, name: string) =>
         .getByRole("navigation", { name: "Main navigation" })
         .getByRole("button", { name, exact: name !== "Activity" });
 
+test("narrow screens keep savings and navigation labels visible", async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await openApp(page);
+    await expect(
+        page.getByRole("heading", { name: "Estimated savings" }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole("heading", { name: "Space saved by ZipXP" }),
+    ).toBeVisible();
+    await expect(
+        nav(page, "Managed folders").getByText("Managed folders"),
+    ).toBeVisible();
+    await expect(
+        nav(page, "Storage insights").getByText("Storage insights"),
+    ).toBeVisible();
+    await expect
+        .poll(() =>
+            page.evaluate(() => {
+                const root = document.documentElement;
+                return root.scrollWidth - root.clientWidth;
+            }),
+        )
+        .toBeLessThanOrEqual(0);
+    await page.getByRole("button", { name: "Manage compression" }).click();
+    await expect(
+        page.getByRole("heading", { name: "Managed folders" }),
+    ).toBeFocused();
+    await expect(
+        page.getByRole("button", { name: "Restore files" }),
+    ).toBeVisible();
+    await page.getByText("More actions", { exact: true }).click();
+    await expect(
+        page.getByRole("button", { name: "Scan again" }),
+    ).toBeVisible();
+    await expect
+        .poll(() =>
+            page.evaluate(() => {
+                const root = document.documentElement;
+                return root.scrollWidth - root.clientWidth;
+            }),
+        )
+        .toBeLessThanOrEqual(0);
+});
+
 test("settings keep actions visible, validate blanks, and restore keyboard focus", async ({
     page,
 }) => {
@@ -18,7 +64,7 @@ test("settings keep actions visible, validate blanks, and restore keyboard focus
     await openApp(page);
     await nav(page, "Managed folders").click();
     const opener = page.getByRole("button", {
-        name: "Settings for Work projects",
+        name: "Folder settings for Work projects",
     });
     await opener.click();
     await page.getByText("Advanced settings", { exact: true }).click();
@@ -91,7 +137,7 @@ test("busy operations preserve focus and allow navigation and search", async ({
 }) => {
     await openApp(page, { delay: { queue: 1800 } });
     const compress = page.getByRole("button", {
-        name: "Compress all eligible",
+        name: "Compress all once",
         exact: true,
     });
     await compress.click();
@@ -122,7 +168,7 @@ test("action failures are dismissible and do not offer connection recovery", asy
             queue: "Not enough free space. Restore needs more room on the drive.",
         },
     });
-    await page.getByRole("button", { name: "Compress all eligible" }).click();
+    await page.getByRole("button", { name: "Compress all once" }).click();
     await expect(page.getByRole("alert")).toContainText(
         "Not enough free space",
     );
@@ -203,7 +249,7 @@ test("global pause is visible and attention links filter failed activity", async
     await page.screenshot({ path: `${artifacts}/paused.png`, fullPage: false });
     await nav(page, "Managed folders").click();
     await expect(
-        page.getByText("Paused globally", { exact: true }),
+        page.getByText("Auto on · paused", { exact: true }),
     ).toBeVisible();
     await nav(page, "Overview").click();
     await page.getByRole("button", { name: "Review activity" }).click();
@@ -253,7 +299,7 @@ test("minimum desktop size keeps settings actions reachable, including high cont
     await openApp(page);
     await nav(page, "Managed folders").click();
     await page
-        .getByRole("button", { name: "Settings for Work projects" })
+        .getByRole("button", { name: "Folder settings for Work projects" })
         .click();
     await page.getByText("Advanced settings", { exact: true }).click();
     await expect(
@@ -352,7 +398,7 @@ test("many folders keep the selected folder actions nearby", async ({
         page.getByRole("heading", { name: "Archive 20", exact: true }),
     ).toBeInViewport();
     await expect(
-        page.getByRole("button", { name: "Compress now", exact: true }),
+        page.getByRole("button", { name: "Compress once", exact: true }),
     ).toBeInViewport();
     const dimensions = await page.evaluate(() => ({
         doc: document.documentElement.scrollHeight,
@@ -429,7 +475,7 @@ test("Quit and startup remain independent of a pending engine action", async ({
 }) => {
     await openApp(page, { delay: { queue: 1800 } });
     await page
-        .getByRole("button", { name: "Compress all eligible", exact: true })
+        .getByRole("button", { name: "Compress all once", exact: true })
         .click();
     const startup = page.getByRole("checkbox", {
         name: "Start when I sign in",
@@ -462,7 +508,6 @@ test("menu actions announce concise labels and return keyboard focus to their tr
     await nav(page, "Managed folders").click();
     const trigger = page.locator(".more-actions > summary");
     for (const label of [
-        "Restore original size",
         "Stop managing this folder",
         "Turn off Windows compression",
     ]) {
@@ -521,7 +566,7 @@ test("advanced settings expose a working scroll cue and persistent save controls
     await openApp(page);
     await nav(page, "Managed folders").click();
     await page
-        .getByRole("button", { name: "Settings for Work projects" })
+        .getByRole("button", { name: "Folder settings for Work projects" })
         .click();
     await page.getByText("Advanced settings", { exact: true }).click();
     const cue = page.getByRole("button", {
@@ -543,7 +588,7 @@ test("the requested monochrome theme uses neutral text, surfaces, borders and fo
 }) => {
     await openApp(page);
     await expect(
-        page.getByRole("button", { name: "Compress all eligible" }),
+        page.getByRole("button", { name: "Compress all once" }),
     ).toBeVisible();
     const offPalette = await page.evaluate(() => {
         const found = new Set<string>();
@@ -624,7 +669,7 @@ test("monochrome error, attention and operational feedback retain separate hiera
         errors: { queue: "The folder could not be processed." },
     });
     await page
-        .getByRole("button", { name: "Compress all eligible", exact: true })
+        .getByRole("button", { name: "Compress all once", exact: true })
         .click();
     await expect(page.locator(".progress-strip")).toBeVisible();
     await expect(page.locator(".attention-card")).toHaveCount(0);
@@ -692,7 +737,7 @@ test("settings contain scrolling and expose live errors through the footer", asy
     await openApp(page);
     await nav(page, "Managed folders").click();
     await page
-        .getByRole("button", { name: "Settings for Work projects" })
+        .getByRole("button", { name: "Folder settings for Work projects" })
         .click();
     await page.getByText("Advanced settings", { exact: true }).click();
     const originalY = await page.evaluate(() => scrollY);
@@ -837,7 +882,7 @@ test("modal backdrop covers the scrollbar gutter and forced-color primaries use 
         () => document.documentElement.clientWidth,
     );
     await page
-        .getByRole("button", { name: "Settings for Work projects" })
+        .getByRole("button", { name: "Folder settings for Work projects" })
         .click();
     const modalHeight = await page
         .getByRole("dialog")
@@ -1052,7 +1097,7 @@ test("high-contrast navigation keeps selection and keyboard focus distinct on ev
     await openApp(page);
     await expect(
         page.getByRole("button", {
-            name: "Compress all eligible",
+            name: "Compress all once",
             exact: true,
         }),
     ).toBeVisible();

@@ -11,7 +11,7 @@ test("review all screens with realistic desktop data", async ({ page }) => {
     await openApp(page);
     await expect(
         page.getByRole("button", {
-            name: "Compress all eligible",
+            name: "Compress all once",
             exact: true,
         }),
     ).toBeVisible();
@@ -73,7 +73,7 @@ test("review all screens with realistic desktop data", async ({ page }) => {
     });
     await page.keyboard.press("Escape");
     await page
-        .getByRole("button", { name: "Settings for Work projects" })
+        .getByRole("button", { name: "Folder settings for Work projects" })
         .click();
     await page.getByText("Advanced settings", { exact: true }).click();
     await expect(

@@ -19,6 +19,7 @@ const fixture: Snapshot = {
             name: "Work",
             path: "C:\\Work",
             status: "Watching",
+            canRestore: true,
             scan: {
                 utc: "2026-01-01T12:00:00Z",
                 logical: 1048576,
@@ -67,7 +68,7 @@ const fixture: Snapshot = {
     startup: false,
     status: "Ready",
     currentFile: null,
-    original: 1048576,
+    savings: { delta: 0, measured: 0 },
     allocated: 524288,
     unknown: 0,
     volumes: [],
@@ -88,33 +89,98 @@ afterEach(() => {
     cleanup();
     vi.resetAllMocks();
 });
-it("keeps adding a folder separate from enabling compression", async () => {
-    vi.mocked(request).mockImplementation(async (command) =>
-        command === "snapshot"
-            ? ({ ...fixture, folders: [], jobs: [] } as never)
-            : ("new-folder" as never),
-    );
+it("selects the newly added folder and keeps the scan separate from compression", async () => {
+    const added = {
+        ...fixture.folders[0],
+        id: "new-folder",
+        name: "New folder",
+        path: "C:\\New folder",
+        scan: null,
+        canRestore: false,
+    };
+    let folderAdded = false;
+    vi.mocked(request).mockImplementation(async (command) => {
+        if (command === "addFolder") {
+            folderAdded = true;
+            return added.id as never;
+        }
+        if (command === "snapshot")
+            return {
+                ...fixture,
+                folders: folderAdded
+                    ? [...fixture.folders, added]
+                    : fixture.folders,
+            } as never;
+        throw new Error(`Unexpected command: ${command}`);
+    });
     render(<App />);
     await userEvent.click(
-        await screen.findByRole("button", { name: "Choose your first folder" }),
+        await screen.findByRole("button", { name: "Add folder" }),
     );
-    expect(request).toHaveBeenCalledWith("addFolder", {});
+    const heading = await screen.findByRole("heading", { name: "New folder" });
+    expect(document.activeElement).toBe(heading);
+    expect(screen.getByText("Auto-compression is off.")).toBeTruthy();
+    expect(
+        screen.getByText(/An estimate will appear after the first scan/),
+    ).toBeTruthy();
+    expect(
+        (
+            screen.getByRole("button", {
+                name: "Compress once",
+            }) as HTMLButtonElement
+        ).disabled,
+    ).toBe(true);
+    expect(screen.queryByRole("button", { name: "Restore files" })).toBeNull();
     expect(
         vi
             .mocked(request)
-            .mock.calls.some(([command]) =>
-                ["queue", "savePolicy"].includes(command),
+            .mock.calls.every(([command]) =>
+                ["snapshot", "addFolder"].includes(command),
             ),
-    ).toBe(false);
+    ).toBe(true);
+});
+
+it("keeps the estimate and ZipXP's measured savings separate", async () => {
+    render(<App />);
+    const estimate = (
+        await screen.findByRole("heading", { name: "Estimated savings" })
+    ).parentElement!;
+    const actual = screen.getByRole("heading", {
+        name: "Space saved by ZipXP",
+    }).parentElement!;
+    expect(within(estimate).getByText("128 KB")).toBeTruthy();
+    expect(within(actual).getByText("None recorded")).toBeTruthy();
+    await userEvent.click(
+        screen.getByRole("button", { name: "Manage compression" }),
+    );
+    expect(screen.getByRole("heading", { name: "Managed folders" })).toBe(
+        document.activeElement,
+    );
+    expect(screen.getByRole("button", { name: "Restore files" })).toBeTruthy();
+});
+
+it("offers an explicit auto-compression action for the selected folder", async () => {
+    render(<App />);
+    await userEvent.click(
+        await screen.findByRole("button", { name: "Manage compression" }),
+    );
+    const enable = screen.getByRole("button", {
+        name: "Turn on auto-compression",
+    });
+    await userEvent.click(enable);
+    expect(request).toHaveBeenCalledWith("setAutoCompression", {
+        rootId: "work",
+        enabled: true,
+    });
 });
 it("saves an explicitly enabled folder policy", async () => {
     render(<App />);
-    await screen.findByRole("button", { name: "Compress all eligible" });
+    await screen.findByRole("button", { name: "Compress all once" });
     await userEvent.click(
         screen.getByRole("button", { name: "Managed folders" }),
     );
     await userEvent.click(
-        screen.getByRole("button", { name: "Settings for Work" }),
+        screen.getByRole("button", { name: "Folder settings for Work" }),
     );
     const dialog = screen.getByRole("dialog");
     await userEvent.click(
@@ -137,7 +203,7 @@ it("keeps a rejected operation visible to the user", async () => {
     });
     render(<App />);
     await userEvent.click(
-        await screen.findByRole("button", { name: "Compress all eligible" }),
+        await screen.findByRole("button", { name: "Compress all once" }),
     );
     await waitFor(() =>
         expect(screen.getByRole("alert").textContent).toContain(
@@ -151,7 +217,7 @@ it("keeps a rejected operation visible to the user", async () => {
 });
 it("filters activity and retries the selected failed item", async () => {
     render(<App />);
-    await screen.findByRole("button", { name: "Compress all eligible" });
+    await screen.findByRole("button", { name: "Compress all once" });
     await userEvent.click(screen.getByRole("button", { name: /Activity/ }));
     await userEvent.type(
         screen.getByRole("textbox", { name: "Search activity" }),
@@ -175,7 +241,7 @@ it("updates the sign-in checkbox immediately and restores it if Windows rejects 
         return structuredClone(fixture) as never;
     });
     render(<App />);
-    await screen.findByRole("button", { name: "Compress all eligible" });
+    await screen.findByRole("button", { name: "Compress all once" });
     const checkbox = screen.getByRole("checkbox", {
         name: "Start when I sign in",
     }) as HTMLInputElement;

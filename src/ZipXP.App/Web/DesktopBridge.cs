@@ -17,7 +17,23 @@ internal sealed class DesktopBridge(Window owner)
     private static string Text(JsonElement args, string key) => args.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String
         ? value.GetString()! : throw new ArgumentException($"Missing {key}.");
     private static bool Flag(JsonElement args, string key) => args.GetProperty(key).GetBoolean();
-    private bool Confirm(string text, string title) => !App.Instance.Exiting && MessageBox.Show(owner, text, title, MessageBoxButton.YesNo, title.Contains("Restore", StringComparison.Ordinal) || title.Contains("Stop managing", StringComparison.Ordinal) ? MessageBoxImage.Warning : MessageBoxImage.Information) == MessageBoxResult.Yes;
+    private bool Confirm(string text, string title) => !App.Instance.Exiting &&
+        MessageBox.Show(owner, text, title, MessageBoxButton.YesNo,
+            title.Contains("Restore", StringComparison.Ordinal) || title.Contains("Stop managing", StringComparison.Ordinal) ? MessageBoxImage.Warning : MessageBoxImage.Information,
+            MessageBoxResult.No) == MessageBoxResult.Yes;
+
+    private string PendingWorkNotice(ManagedFolder root) =>
+        Engine.Store.ActiveJobs().Any(j => j.RootId == root.Id)
+            ? "\n\nThis will cancel the work still queued for this folder." : "";
+
+    private async Task<string> SavePolicyAsync(ManagedFolder root, FolderPolicy policy)
+    {
+        await Engine.SavePolicyAsync(root, policy);
+        if (!policy.Enabled) return "Settings saved. Auto-compression is off. Compressed files stay compressed.";
+        return "Settings saved. Auto-compression is on for existing, new and changed files." +
+            (Engine.Paused ? " Choose Resume all folders to continue." :
+                policy.Paused ? " Choose Resume folder from More actions to continue." : "");
+    }
 
     public async Task<object?> ExecuteAsync(string command, JsonElement args)
     {
@@ -32,25 +48,40 @@ internal sealed class DesktopBridge(Window owner)
             case "pause": await Engine.SetPausedAsync(Flag(args, "paused")); return Engine.Paused ? "Paused. The current file will finish first." : "Background work resumed.";
             case "pauseFolder": await Engine.SetFolderPausedAsync(Root(args).Id, Flag(args, "paused")); return "Folder pause setting updated.";
             case "startup": StartupRegistration.Enabled = Flag(args, "enabled"); return "Sign-in preference saved.";
+            case "setAutoCompression":
+                var folder = Root(args);
+                var enabled = Flag(args, "enabled");
+                if (enabled == folder.Policy.Enabled) return "No changes made.";
+                var title = enabled ? "Turn on auto-compression" : "Turn off auto-compression";
+                var detail = enabled
+                    ? "ZipXP will compress eligible existing, new and changed files while it runs. Files will open as usual."
+                    : "ZipXP will stop compressing files automatically here. Compressed files will stay compressed.";
+                if (!Confirm($"{title} for {folder.Name}?\n\n{detail}" + PendingWorkNotice(folder), title)) return "No changes made.";
+                return await SavePolicyAsync(folder, folder.Policy with { Enabled = enabled });
             case "savePolicy":
-                var policy = args.GetProperty("policy").Deserialize<FolderPolicy>(Json) ?? throw new ArgumentException("Missing folder settings.");
-                // Pause is a separate action and cannot be accidentally overwritten by an open settings form.
+                var submitted = args.GetProperty("policy").Deserialize<FolderPolicy>(Json) ?? throw new ArgumentException("Missing folder settings.");
                 var root = Root(args);
-                await Engine.SavePolicyAsync(root, policy with { Paused = root.Policy.Paused });
-                return "Settings saved. Files already compressed stay compressed until you restore them.";
+                // Pause is a separate action and cannot be accidentally overwritten by an open settings form.
+                var policy = submitted with { Paused = root.Policy.Paused };
+                if (policy == root.Policy) return "No changes made.";
+                var pendingNotice = PendingWorkNotice(root);
+                if (pendingNotice.Length > 0 && !Confirm("Save changes to this folder’s settings?" + pendingNotice, "Save folder settings"))
+                    return "No changes made.";
+                return await SavePolicyAsync(root, policy);
             case "queue": return await QueueAsync(args);
             case "restoreSelected":
                 var selectedRoot = Root(args);
                 var paths = args.GetProperty("paths").Deserialize<string[]>(Json) ?? [];
                 var wanted = paths.ToHashSet(StringComparer.OrdinalIgnoreCase);
-                var selected = Engine.Store.Observations(selectedRoot.Id).Where(o => wanted.Contains(o.Path) && o.File is { Directory: false, Compressed: true }).ToArray();
-                if (selected.Length == 0) return "No compressed files selected.";
-                var headroom = checked(selectedRoot.Policy.ReserveBytes + selected.Max(o => o.File!.Logical));
-                if (!Confirm($"Restore the original size of {selected.Length} selected files?\n\nNeeds at least {Display.Bytes(headroom)} free on the drive. Automatic compression for this folder will be turned off. No files are deleted.", "Restore selected files")) return "No changes made.";
+                var selected = Engine.Store.Observations(selectedRoot.Id).Where(o => wanted.Contains(o.Path)).ToArray();
+                var restorable = Engine.RestorableFiles(selectedRoot, selected).ToArray();
+                if (restorable.Length == 0) return "ZipXP found no selected files it can restore.";
+                var headroom = checked(selectedRoot.Policy.ReserveBytes + restorable.Max(f => f.Logical));
+                if (!Confirm($"Restore the original size of {Plain.Count(restorable.Length, "selected file")}?\n\nNeeds at least {Display.Bytes(headroom)} free on the drive. Automatic compression for this folder will be turned off. No files are deleted.", "Restore selected files")) return "No changes made.";
                 return Queued(await Engine.QueueSelectedAsync(selectedRoot.Id, selected));
             case "remove":
                 var removing = Root(args);
-                if (!Confirm($"Stop managing {removing.Path}?\n\nFiles stay exactly as they are, including any existing compression. To uncompress them first, cancel and choose Restore original size.", "Stop managing folder")) return "No changes made.";
+                if (!Confirm($"Stop managing {removing.Path}?\n\nFiles stay exactly as they are, including any existing compression. To uncompress them first, cancel and choose Restore files.", "Stop managing folder")) return "No changes made.";
                 await Engine.RemoveAsync(removing.Id); return "Folder removed from ZipXP. Its files stay as they are.";
             case "retry":
                 var retry = Engine.Store.Jobs().FirstOrDefault(j => j.Id == Text(args, "jobId")) ?? throw new ArgumentException("Activity item no longer exists.");
@@ -72,9 +103,11 @@ internal sealed class DesktopBridge(Window owner)
     {
         var roots = Engine.Store.Roots();
         var scans = Engine.Store.Scans();
-        var entries = roots.SelectMany(r => Engine.Store.Observations(r.Id)).ToArray();
-        var files = entries.Where(o => o.File is { Directory: false }).Select(o => o.File!).DistinctBy(f => f.Identity).ToArray();
-        var measured = files.Where(f => f.Allocated != null).ToArray();
+        var observations = roots.ToDictionary(r => r.Id, r => Engine.Store.Observations(r.Id));
+        var entries = observations.Values.SelectMany(items => items).ToArray();
+        var measured = entries.Where(o => o.File is { Directory: false, Allocated: not null })
+            .Select(o => o.File!).DistinctBy(f => f.Identity);
+        var savings = Engine.Store.MeasuredSince(DateTime.MinValue);
         var volumes = new List<object>();
         foreach (var name in roots.Select(r => Path.GetPathRoot(r.Path)!).Distinct(StringComparer.OrdinalIgnoreCase))
         {
@@ -83,10 +116,19 @@ internal sealed class DesktopBridge(Window owner)
         }
         return new
         {
-            Folders = roots.Select(r => new { r.Id, r.Name, r.Path, r.Policy, Scan = scans.FirstOrDefault(s => s.RootId == r.Id), Status = Plain.Message(Engine.FolderStatus(r.Id)) }),
+            Folders = roots.Select(r => new
+            {
+                r.Id, r.Name, r.Path, r.Policy,
+                Scan = scans.FirstOrDefault(s => s.RootId == r.Id),
+                Status = Plain.Message(Engine.FolderStatus(r.Id)),
+                CanRestore = Engine.RestorableFiles(r, observations[r.Id]).Any()
+            }),
             Jobs = Engine.Store.Jobs().Select(j => new { j.Id, j.RootId, j.Path, FileName = Path.GetFileName(j.Path), j.State, StateText = Plain.JobState(j.State).Text, Action = Plain.Action(j.Operation), Message = Plain.Message(j.Message), j.Delta, Utc = j.FinishedUtc ?? j.CreatedUtc, j.Pending }),
             Engine.Paused, Startup = StartupRegistration.Enabled, Status = Plain.Message(Engine.Status), Engine.CurrentFile,
-            Original = measured.Sum(f => f.Logical), Allocated = measured.Sum(f => f.Allocated ?? 0), Unknown = entries.Count(e => e.File == null || (e.File.Directory == false && e.File.Allocated == null)), Volumes = volumes
+            Savings = new { savings.Delta, savings.Measured },
+            Allocated = measured.Sum(f => f.Allocated!.Value),
+            Unknown = entries.Count(e => e.File == null || (e.File.Directory == false && e.File.Allocated == null)),
+            Volumes = volumes
         };
     }
 
@@ -129,7 +171,7 @@ internal sealed class DesktopBridge(Window owner)
         return new { Path = path, Parent = string.Equals(path, root.Path, StringComparison.OrdinalIgnoreCase) ? null : Path.GetDirectoryName(path), page.Rows, page.TotalRows };
     }
 
-    private string Queued(int count) => $"{count} items queued." + (Engine.Paused ? " Choose Resume all to start." : " See Activity for progress.");
+    private string Queued(int count) => $"{count} items queued." + (Engine.Paused ? " Choose Resume all folders to start." : " See Activity for progress.");
 
     private async Task<string> QueueAsync(JsonElement args)
     {
@@ -140,19 +182,28 @@ internal sealed class DesktopBridge(Window owner)
             : Engine.Store.Roots().Where(r => operation != "Compress" || !r.Policy.Paused).ToArray();
         if (roots.Length == 0) return "Add a folder first.";
         var previews = new List<(ManagedFolder Root, JobPreview Preview)>();
-        foreach (var root in roots) previews.Add((root, await Engine.PreviewAsync(root, operation)));
-        // A restore with zero eligible files still disables automatic compression, matching the native UI.
+        foreach (var root in roots)
+        {
+            var preview = await Engine.PreviewAsync(root, operation);
+            if (preview.Files > 0) previews.Add((root, preview));
+        }
+        if (previews.Count == 0) return operation switch
+        {
+            "Decompress" => "ZipXP found no compressed files it can restore.",
+            "ClearDefault" => "ZipXP found no folders with Windows compression to turn off.",
+            _ => "ZipXP found no files it can compress right now."
+        };
         var count = previews.Sum(p => p.Preview.Files);
         var headroom = previews.Max(p => p.Preview.RequiredHeadroom);
         var explanation = operation switch
         {
             "Decompress" => "Files will take their original space again. Automatic compression will be turned off for these folders. No files are deleted. Windows folder compression, if enabled, can still compress new files independently.",
             "ClearDefault" => "Windows will stop compressing new files in these folders by itself. Existing compressed files stay compressed.",
-            _ => "Files will be compressed once in the background. Automatic compression will not be enabled. You can restore their original size later."
+            _ => "ZipXP will compress these files once. Your auto-compression settings stay as they are. Use Restore files to undo."
         };
-        var title = operation switch { "Decompress" => "Restore original size", "ClearDefault" => "Turn off Windows compression", _ => "Compress preview" };
-        var coverage = previews.All(p => p.Preview.Coverage == "Complete primary-stream scan") ? "Everything in these folders was checked." : "Partial scan: items that couldn't be read are left out.";
-        var scope = roots.Length == 1 ? roots[0].Path : $"{roots.Length} managed folders";
+        var title = operation switch { "Decompress" => "Restore original size", "ClearDefault" => "Turn off Windows compression", _ => "Compress once" };
+        var coverage = previews.All(p => p.Preview.Coverage == "Complete primary-stream scan") ? "The scan covered the files within your folder settings." : "Some items were skipped or could not be checked.";
+        var scope = previews.Count == 1 ? previews[0].Root.Path : $"{previews.Count} managed folders";
         if (!Confirm($"{scope}\n\n{count} eligible items · {Display.Bytes(previews.Sum(p => p.Preview.LogicalBytes))} in total\nNeeds at least {Display.Bytes(headroom)} free on each affected drive while it works.\n{coverage}\n\n{explanation}\n\nGo ahead?", title)) return "No changes made.";
         var queued = 0;
         foreach (var (root, _) in previews) queued += await Engine.QueueScopeAsync(root.Id, operation);

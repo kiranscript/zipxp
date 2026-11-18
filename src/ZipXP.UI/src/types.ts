@@ -32,6 +32,7 @@ export interface Folder {
     policy: Policy;
     status: string;
     scan: Scan | null;
+    canRestore: boolean;
 }
 export interface Job {
     id: string;
@@ -53,7 +54,7 @@ export interface Snapshot {
     startup: boolean;
     status: string;
     currentFile: string | null;
-    original: number;
+    savings: { delta: number; measured: number };
     allocated: number;
     unknown: number;
     volumes: { name: string; total: number; free: number }[];
@@ -90,6 +91,10 @@ export interface Commands {
     pause: { args: { paused: boolean }; result: string };
     pauseFolder: { args: { rootId: string; paused: boolean }; result: string };
     startup: { args: { enabled: boolean }; result: string };
+    setAutoCompression: {
+        args: { rootId: string; enabled: boolean };
+        result: string;
+    };
     savePolicy: { args: { rootId: string; policy: Policy }; result: string };
     queue: {
         args: {
