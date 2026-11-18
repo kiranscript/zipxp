@@ -9,6 +9,8 @@ export interface Scenario {
     manyInsights?: boolean;
     pendingJobs?: boolean;
     empty?: boolean;
+    running?: boolean;
+    pick?: boolean;
     snapshotError?: string;
     errors?: Record<string, string>;
     delay?: Record<string, number>;
@@ -37,6 +39,20 @@ export async function openApp(page: Page, scenario: Scenario = {}) {
                 snapshot.volumes = [];
                 snapshot.savings = { delta: 0, measured: 0 };
                 snapshot.allocated = 0;
+            }
+            if (scenario.running) {
+                snapshot.folders[0].run = {
+                    operation: "Compress",
+                    startedUtc: new Date().toISOString(),
+                    total: 40,
+                    pending: 28,
+                    failed: 0,
+                    skipped: 0,
+                    savedSoFar: 3145728,
+                    phase: "working",
+                    waiting: null,
+                    currentFile: "customer-export.json",
+                };
             }
             if (scenario.folderCount) {
                 const first = snapshot.folders[0];
@@ -192,6 +208,14 @@ export async function openApp(page: Page, scenario: Scenario = {}) {
                                             totalRows: rows.length,
                                         };
                                     }
+                                    if (
+                                        m.command === "chooseFolder" &&
+                                        scenario.pick
+                                    )
+                                        result = {
+                                            path: "C:\\Users\\Kiran\\Notes",
+                                            name: "Notes",
+                                        };
                                     if (m.command === "pause")
                                         snapshot.paused = Boolean(
                                             m.args.paused,

@@ -2,11 +2,12 @@
 
 ## Getting started
 
-1. Select **Add folder** and choose a folder on a local NTFS drive, such as `C:\zipxp-test`. ZipXP selects it in **Managed folders** and scans it without changing files.
-2. Check the folder’s estimated savings. **Compress once** previews a one-time job. **Turn on auto-compression** asks you to confirm before ZipXP starts handling eligible existing, new, copied and changed files in the background.
+1. On first launch, pick one of the suggested folders (a code folder or Documents usually saves the most) or select **Choose a folder** for any folder on a local NTFS drive. Avoid photos, videos, music, system folders and cloud-synced folders such as OneDrive; they are already compressed or are skipped. ZipXP then asks how to handle it: **Scan, then let me choose** (the default, which only reads the folder) or **Scan and keep compressed automatically**. Either way, ZipXP selects the folder in **Managed folders** and scans it first.
+2. Check the folder’s estimated savings. While a job runs, the folder shows a progress card with files done, space saved so far, the current file and **Pause folder** (and **Stop** for one-time jobs). If it is waiting, it says why, such as on battery or outside your schedule. **Compress once** previews a one-time job, which is the recommended first step. After it finishes, ZipXP offers **Keep compressing automatically**. **Turn on auto-compression** asks you to confirm before ZipXP starts handling eligible existing, new, copied and changed files in the background. Compressed files use a little CPU when opened, which is usually unnoticeable on an SSD but can be slower on a hard disk.
+   If a scan finds no savings, ZipXP says why: **Already compact** (the files are already compressed, which is a good result), **Nothing compressible** (mostly media or archives), or **Mostly small or excluded files**. **Why some files were skipped** lists the counts.
 3. In **Overview**, **Estimated savings** comes from the latest scans. **Space saved by ZipXP** counts the net disk space change ZipXP measured from its own compression and restores. **Folder size on disk** shows how much space the measured files currently use.
 4. Use **Folder settings** to choose subfolders, exclusions and when ZipXP can work. Use **Browse files** to inspect a folder and **Activity** to track progress or retry failed work.
-5. Close the window to keep ZipXP running in the tray. Enable **Start when I sign in** if you want ZipXP to start with Windows. **Pause all folders** or **More actions → Pause folder** pauses work after the current file. **Quit ZipXP** stops background work and keeps the queue for next time.
+5. Close the window to keep ZipXP running in the tray. Its tooltip shows the space saved so far, and ZipXP shows a notification when background compression finishes and a short summary once a week. Enable **Start when I sign in** if you want ZipXP to start with Windows. **Pause all folders** or **More actions → Pause folder** pauses work after the current file. **Quit ZipXP** stops background work and keeps the queue for next time.
 
 ### Decompression and stopping management
 

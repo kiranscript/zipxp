@@ -60,6 +60,9 @@ public sealed class Store : IDisposable
     });
 
     public IReadOnlyList<WorkItem> Jobs() => db.Query("SELECT data FROM jobs ORDER BY created DESC").Select(row => Read<WorkItem>(row[0])).ToArray();
+    public DateTime? RunStart(string root) =>
+        DateTime.TryParse(Setting("runStart:" + root), null, System.Globalization.DateTimeStyles.RoundtripKind, out var start) ? start.ToUniversalTime() : null;
+    public bool HasActiveJobs() => db.Query("SELECT 1 FROM jobs WHERE state IN ('Queued','Retry','Running') LIMIT 1").Count != 0;
     public IReadOnlyList<WorkItem> ActiveJobs() => db.Query("SELECT data FROM jobs WHERE state IN ('Queued','Retry','Running') ORDER BY created DESC").Select(row => Read<WorkItem>(row[0])).ToArray();
     public void SaveJob(WorkItem job) => db.Transaction(() => SaveJobInternal(job));
     private void SaveJobInternal(WorkItem job)
@@ -83,6 +86,9 @@ public sealed class Store : IDisposable
             if (int.Parse(db.Query("SELECT COUNT(*) FROM jobs WHERE state IN ('Queued','Retry','Running')")[0][0]!) >= QueueLimit ||
                 db.Query("SELECT id FROM jobs WHERE root=? AND identity=? AND operation=? AND state IN ('Queued','Retry','Running') LIMIT 1", root.Id, file.Identity, operation).Count != 0) return;
             var now = DateTime.UtcNow;
+            // The first job queued while a folder is idle starts a new run, so the UI can show "12 of 40 files".
+            if (db.Query("SELECT 1 FROM jobs WHERE root=? AND state IN ('Queued','Retry','Running') LIMIT 1", root.Id).Count == 0)
+                Setting("runStart:" + root.Id, now.ToString("O"));
             SaveJobInternal(new(Guid.NewGuid().ToString("N"), root.Id, file, operation, automatic, "Queued", 0, now, now));
             inserted = true;
         });

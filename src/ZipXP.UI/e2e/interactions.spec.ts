@@ -269,7 +269,7 @@ test("empty and disconnected states explain the next step", async ({
 }) => {
     await openApp(page, { empty: true });
     await expect(
-        page.getByRole("button", { name: "Choose your first folder" }),
+        page.getByRole("button", { name: "Choose a folder" }),
     ).toBeVisible();
     await page.screenshot({ path: `${artifacts}/empty.png`, fullPage: false });
 });
@@ -1150,4 +1150,42 @@ test("high-contrast navigation keeps selection and keyboard focus distinct on ev
             path: `${artifacts}/high-contrast-nav-focus-${name.toLowerCase().replaceAll(" ", "-")}.png`,
         });
     }
+});
+
+test("adding a folder asks how to handle it and progress is visible while compressing", async ({
+    page,
+}) => {
+    await openApp(page, { pick: true });
+    await page.getByRole("button", { name: "Add folder" }).first().click();
+    const dialog = page.getByRole("dialog");
+    await expect(
+        dialog.getByRole("heading", { name: "How should ZipXP handle Notes?" }),
+    ).toBeVisible();
+    await expect(
+        dialog.getByRole("radio", { name: /Scan, then let me choose/ }),
+    ).toBeChecked();
+    await dialog
+        .getByRole("radio", { name: /keep compressed automatically/ })
+        .check();
+    await page.screenshot({ path: `${artifacts}/add-folder-choice.png` });
+    await dialog.getByRole("button", { name: "Cancel" }).click();
+    await expect(dialog).toHaveCount(0);
+});
+
+test("a running job shows progress, what is happening and how to pause or stop", async ({
+    page,
+}) => {
+    await openApp(page, { running: true });
+    await page.getByRole("button", { name: "Managed folders" }).click();
+    const card = page.getByRole("group", { name: /Compressing Work projects/ });
+    await expect(card).toBeVisible();
+    await expect(card.getByText(/12 of 40 files/)).toBeVisible();
+    await expect(card.getByText("Now: customer-export.json")).toBeVisible();
+    await expect(
+        card.getByRole("button", { name: "Pause folder" }),
+    ).toBeVisible();
+    await page.screenshot({ path: `${artifacts}/running.png` });
+    await page.getByRole("button", { name: "Overview" }).click();
+    await expect(page.getByText(/saved so far from 12 files/)).toBeVisible();
+    await page.screenshot({ path: `${artifacts}/running-overview.png` });
 });

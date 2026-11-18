@@ -15,7 +15,7 @@ public partial class MainWindow : Window
 {
     private Engine Engine => App.Instance.Engine;
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(2) };
-    private bool ready, refreshing, syncing, commandBusy, hasFolders;
+    private bool ready, refreshing, refreshAgain, syncing, commandBusy, hasFolders;
     private string? selectNext, drill;
     private bool largest;
     private string? activityHint;
@@ -28,32 +28,28 @@ public partial class MainWindow : Window
 
     private static readonly (string Title, string Hint)[] PageInfo =
     [
-        ("Overview", "How much space your folders use, and how much ZipXP has saved."),
-        ("Managed folders", "The folders ZipXP looks after. Select one to change what happens to it."),
+        ("Overview", "Check possible savings, ZipXP’s results, and available drive space."),
+        ("Managed folders", "Select a folder to choose how ZipXP handles it."),
         ("Storage insights", "See what is taking up space inside a folder."),
         ("Activity", "Everything ZipXP has done, and anything that needs your attention.")
     ];
 
-    private sealed record FolderRow(ManagedFolder Root, ScanSummary? Scan, string WorkerStatus)
+    private sealed record FolderRow(ManagedFolder Root, ScanSummary? Scan, string WorkerStatus, bool CanRestore)
     {
         public string Path => Root.Path;
         public string Name => Root.Name;
         public string Parent => Root.Parent;
         public string ShortPath => Plain.MiddleTrim(Root.Path, 38);
-        public string Mode => Root.Policy.Paused ? "Paused" : Root.Policy.Enabled ? "On" : "Off";
-        public string Tone => Root.Policy.Paused ? "Warn" : Root.Policy.Enabled ? "Good" : "Neutral";
-        public string Size => Display.Bytes(Scan?.Logical);
+        public string Mode => !Root.Policy.Enabled ? "Off" : Root.Policy.Paused ? "On · paused" : "On";
+        public string Tone => !Root.Policy.Enabled ? "Neutral" : Root.Policy.Paused ? "Warn" : "Good";
         public string OnDisk => Display.Bytes(Scan?.Allocated);
-        public string SavedText => Scan == null ? "—" : Scan.Logical > Scan.Allocated ? $"{Display.Bytes(Scan.Logical - Scan.Allocated)} ({Math.Round(100.0 * (Scan.Logical - Scan.Allocated) / Scan.Logical):0}%)" : "Nothing yet";
-        public string Compressible => Scan == null ? "—" : Scan.Candidates == 0 ? "All compressed" : Display.Bytes(Scan.Candidates);
-        public string Status => (Plain.Message(WorkerStatus) is "Up to date" ? "Watching" : Plain.Message(WorkerStatus)) + (Scan is { NativeDefaults: > 0 } ? $" · {Plain.BuiltIn} is on in {Plain.Count(Scan.NativeDefaults, "folder")}" : "");
+        public string Estimate => Scan == null ? "—" : Scan.Candidates == 0 ? "None found" : Display.Bytes(Scan.EstimatedSaving);
+        public string Status => Plain.Message(WorkerStatus) + (Scan is { NativeDefaults: > 0 } ? " · Windows compression on" : "");
     }
     private sealed record InsightRow(Observation Source, long? LogicalBytes, long? AllocatedBytes, string Notes)
     {
         public double Share { get; init; }
         public string SharePercent => Share < 0.005 ? "<1%" : $"{Math.Round(Share * 100):0}%";
-        public long SavedBytes => LogicalBytes is long logical && AllocatedBytes is long used && logical > used ? logical - used : 0;
-        public string Saved => SavedBytes > 0 ? $"{Display.Bytes(SavedBytes)} ({Math.Round(100.0 * SavedBytes / Math.Max(1, LogicalBytes ?? 1)):0}%)" : "–";
         public string Name => Source.Name;
         public string Kind => Source.Kind;
         public string Icon => Source.File?.Directory == true ? "\uE8B7" : "\uE7C3";
@@ -98,25 +94,26 @@ public partial class MainWindow : Window
 
     private async Task RefreshAsync()
     {
-        if (!ready || refreshing || !IsVisible || App.Instance.Exiting) return;
+        if (!ready || !IsVisible || App.Instance.Exiting) return;
+        if (refreshing) { refreshAgain = true; return; }
         refreshing = true;
         try
         {
-            var selectedId = selectNext ?? Selected?.Id;
+            var requestedId = selectNext ?? Selected?.Id;
             var since = PeriodStart;
             var snapshot = await Task.Run(() =>
             {
                 var roots = Engine.Store.Roots();
-                selectedId ??= roots.FirstOrDefault()?.Id;
-                var scans = Engine.Store.Scans();
-                var latest = roots.Select(root => new FolderRow(root, scans.FirstOrDefault(s => s.RootId == root.Id), Engine.FolderStatus(root.Id))).ToArray();
+                var selectedId = requestedId ?? roots.FirstOrDefault()?.Id;
                 var allEntries = roots.ToDictionary(r => r.Id, r => Engine.Store.Observations(r.Id));
+                var scans = Engine.Store.Scans();
+                var latest = roots.Select(root => new FolderRow(root, scans.FirstOrDefault(s => s.RootId == root.Id), Engine.FolderStatus(root.Id),
+                    Engine.RestorableFiles(root, allEntries[root.Id]).Any())).ToArray();
                 var entries = selectedId == null ? Array.Empty<Observation>() : allEntries.GetValueOrDefault(selectedId, []);
-                var identities = allEntries.Values.SelectMany(e => e).Where(e => e.File is { Directory: false }).Select(e => e.File!).DistinctBy(f => f.Identity).ToArray();
-                var managedAllocation = identities.Sum(f => f.Allocated ?? 0);
-                // The uncompressed size never changes when a file is compressed, so it stays the fixed point to compare against.
-                var managedOriginal = identities.Sum(f => f.Logical);
+                var measuredFiles = allEntries.Values.SelectMany(e => e).Where(e => e.File is { Directory: false, Allocated: not null })
+                    .Select(e => e.File!).DistinctBy(f => f.Identity).ToArray();
                 var totals = BuildFolderTotals(entries, roots.FirstOrDefault(r => r.Id == selectedId)?.Path);
+                var recentScans = selectedId == null ? [] : Engine.Store.Scans(selectedId).Where(s => s.Complete && s.Unknown == 0).Take(32).Reverse().ToArray();
                 List<DriveRow> volumes = [];
                 foreach (var driveRoot in roots.Select(r => System.IO.Path.GetPathRoot(r.Path)!).Distinct(StringComparer.OrdinalIgnoreCase))
                 {
@@ -133,99 +130,113 @@ public partial class MainWindow : Window
                     }
                     catch (Exception ex) when (Scope.FileError(ex)) { }
                 }
-                return (Roots: roots, Rows: latest, Entries: entries, Totals: totals, Allocation: managedAllocation, Original: managedOriginal, Jobs: Engine.Store.Jobs(), Scans: scans, Volumes: volumes, Measured: Engine.Store.MeasuredSince(since));
+                return (Roots: roots, SelectedId: selectedId, Rows: latest, Entries: entries, Totals: totals,
+                    Allocation: measuredFiles.Sum(f => f.Allocated!.Value), FileSize: measuredFiles.Sum(f => f.Logical), MeasuredFiles: measuredFiles.Length,
+                    Jobs: Engine.Store.Jobs(), History: recentScans, Volumes: volumes, Measured: Engine.Store.MeasuredSince(since));
             });
-            if (App.Instance.Exiting) return;
+            if (App.Instance.Exiting || requestedId != (selectNext ?? Selected?.Id) || since != PeriodStart) return;
+            var selectedId = snapshot.SelectedId;
             syncing = true;
             RootPicker.ItemsSource = snapshot.Roots;
             RootPicker.SelectedItem = snapshot.Roots.FirstOrDefault(r => r.Id == selectedId);
             if (!ReferenceEquals(ChartRootBox.ItemsSource, snapshot.Roots) && !SameRoots(snapshot.Roots)) ChartRootBox.ItemsSource = snapshot.Roots;
-            ChartRootBox.SelectedItem = snapshot.Roots.FirstOrDefault(r => r.Id == selectedId);
+            ChartRootBox.SelectedValue = selectedId;
             ChartRootBox.Visibility = snapshot.Roots.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
             FoldersGrid.ItemsSource = snapshot.Rows;
             FoldersGrid.SelectedItem = snapshot.Rows.FirstOrDefault(r => r.Root.Id == selectedId);
             syncing = false; selectNext = null;
             observations = snapshot.Entries; folderTotals = snapshot.Totals; jobs = snapshot.Jobs;
-            history = snapshot.Scans.Where(s => s.RootId == selectedId && s.Utc >= since && s.Complete).OrderBy(s => s.Utc).TakeLast(32).ToArray();
+            history = snapshot.History;
             var known = snapshot.Rows.Where(r => r.Scan != null).ToArray();
-            var shrunk = snapshot.Original - snapshot.Allocation;
-            var any = known.Length > 0 && snapshot.Original > 0;
-            var ratio = !any ? 1.0 : Math.Clamp((double)snapshot.Allocation / snapshot.Original, 0.0, 1.0);
-            if (shrunk <= 0) ratio = 1.0;
-            UsedCol.Width = new GridLength(Math.Max(ratio, 0.02), GridUnitType.Star); RestCol.Width = new GridLength(Math.Max(1 - ratio, 0.0), GridUnitType.Star);
-            var percent = any && shrunk > 0 ? Math.Round(100.0 * shrunk / snapshot.Original) : 0;
-            SavedHeadline.SetResourceReference(TextBlock.ForegroundProperty, shrunk > 0 ? "SystemFillColorSuccessBrush" : "TextFillColorPrimaryBrush");
-            SavedHeadline.Text = known.Length == 0 ? "—" : shrunk > 0 ? $"{Display.Bytes(shrunk)} saved" : "Nothing saved yet";
-            SavedPercent.Text = known.Length == 0 ? "Waiting for the first scan" : shrunk > 0 ? $"Your files take up {percent:0}% less room than they did" : "Compression hasn't started. Turn it on in Settings, or choose Compress now.";
-            AllocatedCard.Text = known.Length == 0 ? "Using now: —" : $"Using now: {Display.Bytes(snapshot.Allocation)}";
-            SavedLegend.Text = known.Length == 0 ? "Saved: —" : $"Saved: {(shrunk > 0 ? Display.Bytes(shrunk) : "nothing yet")}";
-            OriginalCard.Text = known.Length == 0 ? "Original size: —" : $"Original size: {Display.Bytes(snapshot.Original)}";
+            var candidateFolders = known.Where(r => r.Scan!.Candidates > 0).ToArray();
             var estimate = known.Sum(r => r.Scan!.EstimatedSaving);
-            var allDone = known.Length > 0 && estimate == 0;
-            EstimateCard.Text = known.Length == 0 ? "—" : allDone ? "All compressed" : Display.Bytes(estimate);
-            EstimateCaption.Text = allDone ? $"{Plain.Count(known.Sum(r => r.Scan!.Files), "file")} checked. Nothing more is worth compressing right now." : known.Length == 0 ? "Available after the first scan." : "A rough estimate. Actual savings may differ.";
+            var partial = known.Any(r => r.Scan is { Complete: false } or { Unknown: > 0 });
+            EstimateCard.Text = known.Length == 0 ? "Waiting for scan" : estimate == 0 ? "None found yet" : Display.Bytes(estimate);
+            EstimateCaption.Text = estimate > 0 ? "Based on the latest scans. Actual savings may differ."
+                : known.Length > 0 ? "No additional savings found in the files checked so far."
+                : "An estimate appears after ZipXP scans a folder.";
+            OverviewCompressButton.Visibility = candidateFolders.Any(r => !r.Root.Policy.Paused) ? Visibility.Visible : Visibility.Collapsed;
+            OverviewRestoreButton.Visibility = snapshot.Rows.Any(r => r.CanRestore) ? Visibility.Visible : Visibility.Collapsed;
 
-
-            OverviewCompressButton.Visibility = known.Length > 0 && estimate > 0 ? Visibility.Visible : Visibility.Collapsed;
-            OverviewRestoreButton.Visibility = shrunk > 0 ? Visibility.Visible : Visibility.Collapsed;
-            var unread = known.Sum(r => r.Scan!.Unknown);
-            ScopeCard.Text = snapshot.Roots.Count == 0 ? "No folders added yet"
-                : known.Length == snapshot.Roots.Count ? Plain.Count(snapshot.Roots.Count, "folder")
-                : $"{known.Length} of {Plain.Count(snapshot.Roots.Count, "folder")} scanned" + (unread > 0 ? $" · {Plain.Count(unread, "item")} couldn't be read" : "");
+            var sizeUnavailable = snapshot.MeasuredFiles == 0 && partial;
+            AllocatedCard.Text = known.Length == 0 ? "Waiting for scan" : sizeUnavailable ? "Size unavailable" : $"{Display.Bytes(snapshot.Allocation)} on disk";
+            OriginalCard.Text = known.Length == 0 || sizeUnavailable ? "" : $"{Display.Bytes(snapshot.FileSize)} in file sizes";
+            ScopeCard.Text = partial ? "Some items were skipped or could not be measured."
+                : known.Length < snapshot.Roots.Count ? $"{known.Length} of {Plain.Count(snapshot.Roots.Count, "folder")} scanned."
+                : "From files measured within your folder settings.";
             var saved = snapshot.Measured.Delta;
-            MeasuredCard.Text = snapshot.Roots.Count == 0 ? "—" : Plain.Saved(saved);
-            MeasuredCaption.Text = snapshot.Measured.Measured == 0 ? ""
-                : $"from {Plain.Count(snapshot.Measured.Measured, "compressed file")}" + (saved < 0 ? ". Files take up more room than before, for example after restoring the original size." : "");
+            MeasuredCard.Text = snapshot.Measured.Measured == 0 ? "None recorded"
+                : saved < 0 ? $"{Display.Bytes(-saved)} more used" : saved == 0 ? "No net change" : Display.Bytes(saved);
+            MeasuredCaption.Text = snapshot.Measured.Measured == 0 ? "ZipXP has no measured changes in this period."
+                : $"Measured after {Plain.Count(snapshot.Measured.Measured, "file operation")}, including restores.";
             VolumesList.ItemsSource = snapshot.Volumes;
             VolumesEmpty.Visibility = snapshot.Volumes.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-            VolumesNote.Visibility = Visibility.Collapsed;
             int pending = jobs.Count(j => j.Pending), failed = jobs.Count(j => j.State == "Failed");
             NavActivity.Content = failed > 0 ? $"Activity · {failed} failed" : "Activity";
             var lastDone = jobs.Where(j => j.State == "Succeeded" && j.FinishedUtc != null).OrderByDescending(j => j.FinishedUtc).FirstOrDefault();
-            var lastText = lastDone == null ? "Nothing compressed yet." : $"{Plain.When(lastDone.FinishedUtc!.Value)} · {(lastDone.Operation switch { "Compress" => "compressed", "Decompress" => "restored", _ => "updated" })} {System.IO.Path.GetFileName(lastDone.Path)}";
-            ActivityCard.Text = pending == 0 ? "Nothing waiting" : Plain.Count(pending, "file") + " waiting";
-            WatchNote.Visibility = pending == 0 ? Visibility.Visible : Visibility.Collapsed;
-            // Auto-compress stops when ZipXP is closed: say so, quietly and for as long as it's true.
+            var lastText = lastDone == null ? "No completed operations yet." : $"{Plain.When(lastDone.FinishedUtc!.Value)} · {(lastDone.Operation switch { "Compress" => "compressed", "Decompress" => "restored", _ => "updated" })} {System.IO.Path.GetFileName(lastDone.Path)}";
+            ActivityCard.Text = Engine.Paused ? "Paused" : pending == 0 ? "Nothing waiting" : Plain.Count(pending, "file") + " waiting";
             var autoOn = snapshot.Roots.Any(r => r.Policy.Enabled);
+            WatchNote.Text = Engine.Paused ? $"{Plain.Count(pending, "file")} waiting. Choose Resume all to continue."
+                : !autoOn ? "Auto-compression is off for all folders." : pending == 0 ? "Auto-compression is on for at least one folder." : "";
             StartupHint.Visibility = autoOn && StartupBox.IsChecked != true ? Visibility.Visible : Visibility.Collapsed;
             LastActionCard.Text = lastText; LastActionCard.ToolTip = lastText;
             WorkerText.Text = Engine.CurrentFile == null ? Plain.Message(Engine.Status) : $"Working on {Engine.CurrentFile} · {pending} waiting";
             SetBusy(Engine.CurrentFile != null || commandBusy);
             ShowPauseState();
-            FolderPauseItem.Header = Selected?.Policy.Paused == true ? "Resume this folder" : "Pause this folder";
-            EmptyFolders.Visibility = snapshot.Roots.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-            FoldersGrid.Visibility = snapshot.Roots.Count == 0 ? Visibility.Hidden : Visibility.Visible;
-            // This toolbar contains selection actions; Add folder lives in the page header.
-            foreach (var action in FolderActions.Children.OfType<UIElement>())
-            {
-                action.IsEnabled = Selected != null;
-                action.Visibility = snapshot.Roots.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
-            }
-            var selectedRow = snapshot.Rows.FirstOrDefault(r => r.Root.Id == Selected?.Id);
-            FolderCompressButton.IsEnabled = Selected != null && selectedRow?.Scan is { Candidates: > 0 };
-            FolderCompressButton.ToolTip = FolderCompressButton.IsEnabled ? "Compress the files worth compressing once, without turning on automatic compression."
-                : selectedRow?.Scan is { Candidates: 0 } ? "Everything worth compressing in this folder is already compressed." : "Select a folder that has been scanned.";
-            var anyCompressed = selectedRow?.Scan is { } sc && sc.Logical > sc.Allocated;
-            FolderUndoButton.IsEnabled = Selected != null && anyCompressed;
-            FolderUndoButton.ToolTip = FolderUndoButton.IsEnabled ? "Uncompress every file in the selected folder so it takes its full, original space again, and turn off automatic compression for it. No files are deleted."
-                : "Nothing in the selected folder is compressed right now, so it already takes its original space.";
-            var selectedDone = selectedRow?.Scan is { Candidates: 0 };
-            FoldersNote.Text = selectedDone ? "Everything worth compressing in this folder is already compressed."
-                : "New folders are only scanned. Turn on Auto-compress in Settings, or choose Compress now. You can restore the original size at any time.";
-            FoldersNote.Visibility = snapshot.Roots.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
-            hasFolders = snapshot.Roots.Count > 0; ShowPage(Math.Max(0, Pages.SelectedIndex));
+            hasFolders = snapshot.Roots.Count > 0;
+            ShowPage(Math.Max(0, Pages.SelectedIndex));
+            EmptyFolders.Visibility = hasFolders ? Visibility.Collapsed : Visibility.Visible;
+            FoldersGrid.Visibility = hasFolders ? Visibility.Visible : Visibility.Hidden;
+            UpdateFolderCard(FoldersGrid.SelectedItem as FolderRow);
             WelcomeCard.Visibility = hasFolders ? Visibility.Collapsed : Visibility.Visible;
-            WelcomeSteps.Visibility = WelcomeCard.Visibility;
-            // First run: just the welcome card and its one button. Everything else appears once there is something to show.
             OverviewBody.Visibility = hasFolders ? Visibility.Visible : Visibility.Collapsed;
             WorkerText.Visibility = hasFolders && (Pages.SelectedIndex != 0 || Engine.CurrentFile != null || Engine.Paused) ? Visibility.Visible : Visibility.Hidden;
             PauseButton.Visibility = hasFolders ? Visibility.Visible : Visibility.Collapsed;
-            FolderActions.Visibility = hasFolders ? Visibility.Visible : Visibility.Collapsed;
             if (drill == null || Selected == null || !Scope.Within(drill, Selected.Path)) drill = Selected?.Path;
             RenderInsights(); RenderActivity(); RenderChart();
         }
         catch (Exception ex) { Notify("Couldn't update this window: " + Plain.Message(ex.Message), true); }
-        finally { syncing = false; refreshing = false; }
+        finally
+        {
+            syncing = false;
+            refreshing = false;
+            if (refreshAgain)
+            {
+                refreshAgain = false;
+                _ = RefreshAsync();
+            }
+        }
+    }
+
+    private void UpdateFolderCard(FolderRow? row)
+    {
+        FolderCard.Visibility = row == null ? Visibility.Collapsed : Visibility.Visible;
+        if (row == null) return;
+
+        var root = row.Root;
+        SelectedFolderTitle.Text = root.Name;
+        SelectedFolderTitle.ToolTip = root.Path;
+        var state = root.Policy.Enabled ? "Auto-compression is on." : "Auto-compression is off.";
+        SelectedFolderState.Text = state + (root.Policy.Paused ? " This folder is paused. Use More → Resume this folder."
+            : Engine.Paused ? " ZipXP is paused. Choose Resume all to continue."
+            : root.Policy.Enabled ? " ZipXP checks existing, new and changed files." : " Turn it on for existing and future files, or compress once.");
+        if (row.Scan is { NativeDefaults: > 0 })
+            SelectedFolderState.Text += " Windows also compresses new files in some of these folders.";
+
+        FoldersNote.Text = row.WorkerStatus.StartsWith("Scan failed:", StringComparison.Ordinal) ? Plain.Message(row.WorkerStatus)
+            : row.Scan == null ? "A savings estimate will appear after the first scan. Scanning leaves your files as they are."
+            : row.Scan.Candidates > 0 ? $"Estimated savings of {row.Estimate} based on the latest scan."
+            : "No additional savings found in the files checked so far.";
+        FolderAutomationButton.Content = root.Policy.Enabled ? "Turn off auto-compression…" : "Turn on auto-compression…";
+        FolderAutomationButton.SetResourceReference(StyleProperty, root.Policy.Enabled ? "CommandButton" : "PrimaryButton");
+        FolderPauseItem.Header = root.Policy.Paused ? "Resume this folder" : "Pause this folder";
+        FolderCompressButton.IsEnabled = !root.Policy.Paused && row.Scan is { Candidates: > 0 };
+        FolderCompressButton.ToolTip = root.Policy.Paused ? "Resume this folder before compressing it."
+            : row.Scan == null ? "Available after ZipXP scans this folder."
+            : row.Scan.Candidates == 0 ? "The latest scan found no files to compress right now."
+            : "Preview one-time compression of eligible files in this folder.";
+        FolderUndoButton.IsEnabled = row.CanRestore;
     }
 
     private async Task Command(Func<Task> action)
@@ -306,8 +317,7 @@ public partial class MainWindow : Window
             "Downloads" => (string?)null, "Desktop" => Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), _ => Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
         } ?? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
         if (!System.IO.Directory.Exists(special)) throw new InvalidOperationException("That folder doesn't exist on this PC. Use Add folder to pick another one.");
-        var root = await Engine.AddAsync(special); selectNext = root.Id;
-        Notify("Folder added. ZipXP is scanning it now and hasn't changed anything. To start saving space, open Settings and turn on automatic compression.");
+        await AddFolderAsync(special);
     });
     private void ShowInFolder_Click(object sender, RoutedEventArgs e)
     {
@@ -326,6 +336,7 @@ public partial class MainWindow : Window
     private void FolderGrid_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (!ready || syncing || FoldersGrid.SelectedItem is not FolderRow row) return;
+        UpdateFolderCard(row);
         RootPicker.SelectedItem = RootPicker.Items.Cast<ManagedFolder>().FirstOrDefault(r => r.Id == row.Root.Id);
     }
 
@@ -333,9 +344,26 @@ public partial class MainWindow : Window
     {
         var dialog = new OpenFolderDialog { Title = "Choose a folder on this PC for ZipXP to look after" };
         if (dialog.ShowDialog(this) != true) return;
-        var root = await Engine.AddAsync(dialog.FolderName); selectNext = root.Id;
-        Notify("Folder added. ZipXP is scanning it now and hasn't changed anything. To start saving space, open Settings and turn on automatic compression.");
+        await AddFolderAsync(dialog.FolderName);
     });
+    private async Task AddFolderAsync(string path)
+    {
+        var root = await Engine.AddAsync(path);
+        selectNext = root.Id;
+        drill = root.Path;
+        largest = false;
+        ShowPage(1);
+        Notify($"Added {root.Name}. ZipXP will scan it to estimate savings.");
+    }
+
+    private void BrowseFolder_Click(object sender, RoutedEventArgs e)
+    {
+        drill = Selected?.Path;
+        largest = false;
+        ShowPage(2);
+        RenderInsights();
+    }
+
     private void Analyze_Click(object sender, RoutedEventArgs e)
     {
         try { Engine.RequestScan(RequireRoot().Id); Notify("Scan started. Scanning only looks at your files; it never changes them."); }
@@ -346,12 +374,37 @@ public partial class MainWindow : Window
         var root = RequireRoot();
         var defaults = Engine.Store.Scans(root.Id).FirstOrDefault()?.NativeDefaults ?? 0;
         var editor = new PolicyWindow(root, defaults) { Owner = this };
-        if (editor.ShowDialog() != true) return;
-        await Engine.SavePolicyAsync(root, editor.Policy);
-        Notify(editor.Policy.Enabled ? "Automatic compression is on for this folder. Files worth compressing, now and in future, are handled in the background."
-            + (StartupBox.IsChecked == true ? "" : " It only works while ZipXP is running, so consider turning on \"Start when I sign in\" at the bottom left.")
-            : "Settings saved. Automatic compression is off for this folder. Files that are already compressed stay compressed.");
+        if (editor.ShowDialog() != true || editor.Policy == root.Policy) return;
+        var queueNotice = PendingWorkNotice(root);
+        if (queueNotice != "" && MessageBox.Show(this, "Save these settings?" + queueNotice,
+                "Change folder settings", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes) return;
+        await SaveFolderPolicyAsync(root, editor.Policy);
     });
+
+    private async void FolderAutomation_Click(object sender, RoutedEventArgs e) => await Command(async () =>
+    {
+        var root = RequireRoot();
+        var enable = !root.Policy.Enabled;
+        var title = enable ? "Turn on auto-compression" : "Turn off auto-compression";
+        var explanation = enable
+            ? "ZipXP will compress eligible existing, new and changed files in the background while it is running. Your files will still open as usual."
+            : "ZipXP will stop compressing files automatically in this folder. Already compressed files will stay compressed.";
+        var text = $"{title} for {root.Name}?\n\n{explanation}" + PendingWorkNotice(root);
+        if (MessageBox.Show(this, text, title, MessageBoxButton.YesNo, MessageBoxImage.Information, MessageBoxResult.No) != MessageBoxResult.Yes) return;
+        await SaveFolderPolicyAsync(root, root.Policy with { Enabled = enable });
+    });
+
+    private string PendingWorkNotice(ManagedFolder root) => Engine.Store.ActiveJobs().Any(j => j.RootId == root.Id)
+        ? "\n\nThis will cancel any work still queued for this folder." : "";
+
+    private async Task SaveFolderPolicyAsync(ManagedFolder root, FolderPolicy policy)
+    {
+        await Engine.SavePolicyAsync(root, policy);
+        Notify(policy.Enabled
+            ? $"Auto-compression is on for {root.Name}." + (root.Policy.Paused ? " Resume this folder from More to start." : Engine.Paused ? " Choose Resume all to start." : "")
+            : $"Auto-compression is off for {root.Name}. Already compressed files stay compressed.");
+    }
+
     private async void FolderPause_Click(object sender, RoutedEventArgs e) => await Command(async () =>
     {
         var root = RequireRoot(); await Engine.SetFolderPausedAsync(root.Id, !root.Policy.Paused);
@@ -360,18 +413,10 @@ public partial class MainWindow : Window
     private async void Remove_Click(object sender, RoutedEventArgs e) => await Command(async () =>
     {
         var root = RequireRoot();
-        var scan = Engine.Store.Scans(root.Id).FirstOrDefault();
-        if (scan is { } s && s.Logical > s.Allocated)
-        {
-            var answer = MessageBox.Show(this,
-                $"Files in this folder are still compressed, saving {Display.Bytes(s.Logical - s.Allocated)}.\n\n" +
-                "Yes: restore the original size first (you'll see a preview, and the folder stays in ZipXP until you stop managing it).\n" +
-                "No: stop managing it now and leave the files compressed. They still open normally.\n" +
-                "Cancel: do nothing.",
-                "Stop managing this folder", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
-            if (answer == MessageBoxResult.Cancel) return;
-            if (answer == MessageBoxResult.Yes) { await RunScopeJob(root, "Decompress"); return; }
-        }
+        var entries = Engine.Store.Observations(root.Id);
+        var restore = Engine.RestorableFiles(root, entries).Any() ? "\n\nTo restore compressed files first, choose No and use Restore files." : "";
+        var text = $"Stop managing {root.Name}?\n\nZipXP will remove this folder from its list and leave the files as they are." + restore;
+        if (MessageBox.Show(this, text, "Stop managing this folder", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes) return;
         await Engine.RemoveAsync(root.Id); drill = null;
         Notify("ZipXP no longer manages that folder. Its files are exactly as they were.");
     });
@@ -380,55 +425,71 @@ public partial class MainWindow : Window
     {
         Notify("Checking the folder…");
         var preview = await Engine.PreviewAsync(root, operation);
+        if (preview.Files == 0)
+        {
+            Notify(operation switch
+            {
+                "Decompress" => "ZipXP found no compressed files it can restore in this folder.",
+                "ClearDefault" => "ZipXP found no folders with Windows compression to turn off.",
+                _ => "ZipXP found no files it can compress right now."
+            });
+            return;
+        }
         var builtIn = preview.NativeDefaults > 0 ? $"{Plain.BuiltIn} is switched on in {Plain.Count(preview.NativeDefaults, "folder")} here." : null;
         var (title, summary, explanation) = operation switch
         {
-            "Decompress" => ("Restore original size", RestoreSummary(root, preview),
-                "No files are deleted; they are uncompressed and take their full space again.\nAutomatic compression is turned off for this folder first, so nothing is compressed again. The folder stays in ZipXP." + (builtIn == null ? "" : $"\n\n{builtIn} Windows may still compress new files there until you turn that off from the More menu.")),
+            "Decompress" => ("Restore original size", $"{Plain.Count(preview.Files, "compressed file")} to restore",
+                "The files will take up more space and still open normally. ZipXP will turn off auto-compression for this folder." + (builtIn == null ? "" : $"\n\n{builtIn} Windows may still compress new files there until you turn that off from the More menu.")),
             "ClearDefault" => ("Turn off " + Plain.BuiltIn, $"{Plain.Count(preview.Files, "folder")} to update",
                 "Windows will stop compressing new files in these folders by itself. Files that are already compressed stay compressed."),
-            _ => ("Compress preview", $"{Plain.Count(preview.Files, "file")} worth compressing · {Display.Bytes(preview.LogicalBytes)} in total",
-                "They will be compressed once, in the background. This does not turn on automatic compression." + (builtIn == null ? "" : "\n\n" + builtIn))
+            _ => ("Compress once", $"{Plain.Count(preview.Files, "file")} worth compressing · {Display.Bytes(preview.LogicalBytes)} in total",
+                "ZipXP will compress these files once. Your auto-compression setting stays as it is." + (builtIn == null ? "" : "\n\n" + builtIn))
         };
-        var coverage = preview.Coverage == "Complete primary-stream scan" ? "Everything in the folder was checked." : Plain.Message(preview.Coverage) + ", so those are left out.";
+        var coverage = preview.Coverage == "Complete primary-stream scan" ? "The scan covered the files within your folder settings." : "Some items were skipped or could not be checked.";
         var text = $"{root.Path}\n\n{summary}\nNeeds at least {Display.Bytes(preview.RequiredHeadroom)} of free space on the drive while it works.\n{coverage}\n\n{explanation}\n\nGo ahead?";
-        if (MessageBox.Show(this, text, title, MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes) { BannerHost.Visibility = Visibility.Collapsed; return; }
+        if (MessageBox.Show(this, text, title, MessageBoxButton.YesNo, MessageBoxImage.Information, MessageBoxResult.No) != MessageBoxResult.Yes) { BannerHost.Visibility = Visibility.Collapsed; return; }
         var count = await Engine.QueueScopeAsync(root.Id, operation);
         Notify($"{Plain.Count(count, "item")} added to the queue." + (Engine.Paused ? " ZipXP is paused, so choose Resume all to start." : " See Activity for progress."));
     }
-    private string RestoreSummary(ManagedFolder root, JobPreview preview)
-    {
-        var line = $"{Plain.Count(preview.Files, "compressed file")} will be uncompressed";
-        if (Engine.Store.Scans(root.Id).FirstOrDefault() is { } s && s.Logical > s.Allocated)
-            line += $", so this folder grows from {Display.Bytes(s.Allocated)} to {Display.Bytes(s.Logical)}";
-        return line + ".";
-    }
-    /// <summary>Overview: undo compression in every managed folder that has compressed files, after one confirmation.</summary>
     private async void RestoreAll_Click(object sender, RoutedEventArgs e) => await Command(async () =>
     {
-        var roots = Engine.Store.Roots().Where(r => Engine.Store.Scans(r.Id).FirstOrDefault() is { } s && s.Logical > s.Allocated).ToArray();
-        if (roots.Length == 0) { Notify("Nothing is compressed right now, so everything already takes its original space."); return; }
+        var roots = Engine.Store.Roots().Where(r => Engine.RestorableFiles(r, Engine.Store.Observations(r.Id)).Any()).ToArray();
         Notify("Checking your folders…");
-        long files = 0, grow = 0, headroom = 0;
+        long files = 0, headroom = 0;
+        var targets = new List<ManagedFolder>();
+        var windowsCompression = false;
+        var complete = true;
         foreach (var root in roots)
         {
             var preview = await Engine.PreviewAsync(root, "Decompress");
-            files += preview.Files; headroom = Math.Max(headroom, preview.RequiredHeadroom);
-            var s = Engine.Store.Scans(root.Id).First(); grow += s.Logical - s.Allocated;
+            if (preview.Files == 0) continue;
+            targets.Add(root);
+            files += preview.Files;
+            headroom = Math.Max(headroom, preview.RequiredHeadroom);
+            windowsCompression |= preview.NativeDefaults > 0;
+            complete &= preview.Coverage == "Complete primary-stream scan";
         }
-        var text = $"{Plain.Count(files, "compressed file")} in {Plain.Count(roots.Length, "folder")} will be uncompressed, so your folders take up {Display.Bytes(grow)} more space.\n"
-            + $"Needs at least {Display.Bytes(headroom)} of free space on the drive while it works.\n\n"
-            + "No files are deleted. Automatic compression is turned off for these folders first, so nothing is compressed again. The folders stay in ZipXP.\n\nGo ahead?";
-        if (MessageBox.Show(this, text, "Restore original size", MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes) { BannerHost.Visibility = Visibility.Collapsed; return; }
+        if (targets.Count == 0) { Notify("ZipXP found no compressed files it can restore."); return; }
+        var text = $"Restore {Plain.Count(files, "compressed file")} in {Plain.Count(targets.Count, "folder")}?\n" +
+            $"Needs at least {Display.Bytes(headroom)} of free space while it works.\n\n" +
+            "The files will take up more space and still open normally. ZipXP will turn off auto-compression for those folders." +
+            (complete ? "" : "\nSome items were skipped or could not be checked.") +
+            (windowsCompression ? "\nWindows may still compress new files in folders where its own compression is on." : "");
+        if (MessageBox.Show(this, text, "Restore original size", MessageBoxButton.YesNo, MessageBoxImage.Information, MessageBoxResult.No) != MessageBoxResult.Yes)
+        {
+            BannerHost.Visibility = Visibility.Collapsed;
+            return;
+        }
         var queued = 0;
-        foreach (var root in roots) queued += await Engine.QueueScopeAsync(root.Id, "Decompress");
-        Notify($"{Plain.Count(queued, "item")} added to the queue." + (Engine.Paused ? " ZipXP is paused, so choose Resume all to start." : " See Activity for progress."));
+        foreach (var root in targets) queued += await Engine.QueueScopeAsync(root.Id, "Decompress");
+        Notify($"{Plain.Count(queued, "file")} queued to restore." + (Engine.Paused ? " Choose Resume all to start." : " See Activity for progress."));
     });
     /// <summary>Overview: compress everything worth compressing in every managed folder, after one confirmation.</summary>
     private async void CompressAll_Click(object sender, RoutedEventArgs e) => await Command(async () =>
     {
-        var roots = Engine.Store.Roots().Where(r => !r.Policy.Paused).ToArray();
-        if (roots.Length == 0) throw new InvalidOperationException("Add a folder first.");
+        var allRoots = Engine.Store.Roots();
+        var roots = allRoots.Where(r => !r.Policy.Paused).ToArray();
+        if (roots.Length == 0) { Notify("Resume a folder from Managed folders before compressing it."); return; }
         Notify("Checking your folders…");
         long files = 0, bytes = 0, headroom = 0; var complete = true; var targets = new List<ManagedFolder>();
         foreach (var root in roots)
@@ -441,9 +502,10 @@ public partial class MainWindow : Window
         if (targets.Count == 0) { Notify("Nothing is worth compressing right now."); return; }
         var text = $"{Plain.Count(files, "file")} worth compressing in {Plain.Count(targets.Count, "folder")} · {Display.Bytes(bytes)} in total\n"
             + $"Needs at least {Display.Bytes(headroom)} of free space on the drive while it works.\n"
-            + (complete ? "Everything in those folders was checked.\n" : "Items that couldn't be read are left out.\n")
-            + "\nThey will be compressed once, in the background, and you can undo it later from Managed folders > Restore. This does not turn on automatic compression.\n\nGo ahead?";
-        if (MessageBox.Show(this, text, "Compress preview", MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes) { BannerHost.Visibility = Visibility.Collapsed; return; }
+            + (complete ? "" : "Some items were skipped or could not be checked.\n")
+            + (allRoots.Count == roots.Length ? "" : $"{Plain.Count(allRoots.Count - roots.Length, "paused folder")} left out.\n")
+            + "\nYour auto-compression settings stay as they are. To undo, use Restore files in Managed folders.\n\nGo ahead?";
+        if (MessageBox.Show(this, text, "Compress once", MessageBoxButton.YesNo, MessageBoxImage.Information, MessageBoxResult.No) != MessageBoxResult.Yes) { BannerHost.Visibility = Visibility.Collapsed; return; }
         var queued = 0;
         foreach (var root in targets) queued += await Engine.QueueScopeAsync(root.Id, "Compress");
         Notify($"{Plain.Count(queued, "item")} added to the queue." + (Engine.Paused ? " ZipXP is paused, so choose Resume all to start." : " See Activity for progress."));
@@ -454,14 +516,17 @@ public partial class MainWindow : Window
         var selected = InsightsGrid.SelectedItems.Cast<InsightRow>().Select(r => r.Source).Where(o => o.File is { Directory: false, Compressed: true }).ToArray();
         if (selected.Length == 0) throw new InvalidOperationException("Select one or more compressed files in the list first.");
         var space = root.Policy.ReserveBytes + selected.Max(o => o.File!.Logical);
-        if (MessageBox.Show(this, $"Restore the original size of {Plain.Count(selected.Length, "selected file")}?\n\nThey will be uncompressed and take their full space again. No files are deleted.\nNeeds at least {Display.Bytes(space)} of free space on the drive.\n\nAutomatic compression for this folder will be turned off, so the files aren't compressed again.", "Restore original size of selected files", MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes) return;
+        var text = $"Restore the original size of {Plain.Count(selected.Length, "selected file")}?\n\n" +
+            $"The files will take up more space and still open normally. Needs at least {Display.Bytes(space)} of free space.\n\n" +
+            "ZipXP will turn off auto-compression for this folder.";
+        if (MessageBox.Show(this, text, "Restore selected files", MessageBoxButton.YesNo, MessageBoxImage.Information, MessageBoxResult.No) != MessageBoxResult.Yes) return;
         var count = await Engine.QueueSelectedAsync(root.Id, selected);
         Notify($"{Plain.Count(count, "file")} queued to restore. Automatic compression is now off for this folder.");
     });
     private async void Pause_Click(object sender, RoutedEventArgs e)
     {
         PauseButton.IsEnabled = false;
-        try { await Engine.SetPausedAsync(!Engine.Paused); ShowPauseState(); }
+        try { await Engine.SetPausedAsync(!Engine.Paused); ShowPauseState(); await RefreshAsync(); }
         catch (Exception ex) { Fail(ex); }
         finally { if (!App.Instance.Exiting) PauseButton.IsEnabled = true; }
     }
@@ -623,7 +688,7 @@ public partial class MainWindow : Window
         var any = JobsGrid.SelectedItem is JobRow;
         JobDetails.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
         JobDetailsLabel.Visibility = Visibility.Visible;
-        JobDetailsLabel.Text = any ? "Details for this item. Copy them if you need help." : "Select an item to see its details or show it in File Explorer. To undo compression, use Storage insights.";
+        JobDetailsLabel.Text = any ? "Details for this item. Copy them if you need help." : "Select an item to see its details or show it in File Explorer. To undo compression, use Restore files in Managed folders.";
         if (JobsGrid.SelectedItem is not JobRow row) return;
         var job = row.Source;
         JobDetails.Text = $"{row.Action} · {row.State} · tried {Plain.Count(job.Attempts, "time")}\n{job.Path}\n{row.Details}\nSpace saved: {row.Saved}\n\nTechnical details: {job.Operation} / {job.State} · {job.Message} · file ID {job.Expected.Identity}";
@@ -641,38 +706,28 @@ public partial class MainWindow : Window
         HistoryChart.Children.Clear();
         var folderName = Selected == null ? "" : System.IO.Path.GetFileName(Selected.Path);
         HistoryCaption.Text = Selected == null ? "Add a folder to start tracking how much space it uses."
-            : history.Count == 0 ? $"No scans of {folderName} in this period yet."
-            : $"Space used by {folderName} after each scan. The dashed line is its original size." + (history.Any(s => s.Unknown > 0) ? " Orange bars are scans where some items couldn't be read." : "");
+            : history.Count == 0 ? $"No scans with full measurements for {folderName} yet."
+            : $"Size on disk for {folderName} at each recent scan with full measurements.";
         HistoryChart.Visibility = history.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
-        HistoryRange.Visibility = Selected == null ? Visibility.Collapsed : Visibility.Visible;
-        if (history.Count == 0) { HistoryRange.Text = "No scans in this period yet."; return; }
+        HistoryRange.Visibility = HistoryChart.Visibility;
+        if (history.Count == 0) return;
         const double axis = 22, top = 22, chartHeight = 104;
         var width = Math.Max(100, HistoryChart.ActualWidth);
-        var original = history[^1].Logical;
-        var maximum = Math.Max(1, Math.Max(history.Max(s => s.Allocated), original));
+        var maximum = Math.Max(1, history.Max(s => s.Allocated));
         var plot = chartHeight - axis - top;
         var baseline = new Rectangle { Width = width, Height = 1 };
         baseline.SetResourceReference(Shape.FillProperty, "ControlStrongFillColorDefaultBrush");
         Canvas.SetBottom(baseline, axis); HistoryChart.Children.Add(baseline);
         var slot = width / history.Count;
         var barWidth = Math.Clamp(slot * 0.6, 2, 28);
-        // Reference line: what the folder would take up uncompressed.
-        var referenceY = plot * original / maximum;
-        var dash = new Line { X1 = 0, X2 = width, StrokeThickness = 1, StrokeDashArray = [4, 4] };
-        dash.SetResourceReference(Shape.StrokeProperty, "TextFillColorTertiaryBrush");
-        Canvas.SetBottom(dash, axis + referenceY); HistoryChart.Children.Add(dash);
-        var originalLabel = new TextBlock { Text = $"Original size {Display.Bytes(original)} · now {Display.Bytes(history[^1].Allocated)}", FontSize = 12 };
-        originalLabel.SetResourceReference(TextBlock.ForegroundProperty, "TextFillColorSecondaryBrush");
-        Canvas.SetRight(originalLabel, 0); Canvas.SetBottom(originalLabel, axis + referenceY + 3); HistoryChart.Children.Add(originalLabel);
         var index = 0;
         foreach (var scan in history)
         {
             var height = Math.Max(2, plot * scan.Allocated / maximum);
-            var complete = scan.Unknown == 0;
-            var description = $"{scan.Utc.ToLocalTime():g}: {scan.AllocationDisplay} used" + (complete ? "" : ". " + Plain.Message(scan.Coverage));
+            var description = $"{scan.Utc.ToLocalTime():g}: {scan.AllocationDisplay} on disk";
             var bar = new Rectangle { Width = barWidth, Height = height, RadiusX = 2, RadiusY = 2, ToolTip = description.Replace(": ", "\n") };
             System.Windows.Automation.AutomationProperties.SetName(bar, description);
-            bar.SetResourceReference(Shape.FillProperty, complete ? "AccentFillColorDefaultBrush" : "SystemFillColorCautionBrush");
+            bar.SetResourceReference(Shape.FillProperty, "AccentFillColorDefaultBrush");
             // One evenly spaced slot per scan, so bars don't bunch up when scans are close together in time.
             Canvas.SetLeft(bar, slot * index + (slot - barWidth) / 2); Canvas.SetBottom(bar, axis); HistoryChart.Children.Add(bar);
             index++;
@@ -687,6 +742,6 @@ public partial class MainWindow : Window
         Canvas.SetLeft(startText, 0); Canvas.SetBottom(startText, 0); Canvas.SetRight(endText, 0); Canvas.SetBottom(endText, 0);
         HistoryChart.Children.Add(startText); if (history.Count > 1) HistoryChart.Children.Add(endText);
         HistoryRange.Text = history.Count == 1 ? $"One scan so far ({Plain.When(history[0].Utc)})."
-            : $"{Plain.Count(history.Count, "scan")} in this period.";
+            : $"Showing the latest {Plain.Count(history.Count, "scan")}.";
     }
 }

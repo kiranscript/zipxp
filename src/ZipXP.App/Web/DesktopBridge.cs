@@ -12,6 +12,8 @@ internal sealed class DesktopBridge(Window owner)
 {
     internal static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private Engine Engine => App.Instance.Engine;
+    // The folder picker is native; the page only ever receives its result and can't name an arbitrary path.
+    private string? pendingPick;
     private ManagedFolder Root(JsonElement args) => Engine.Store.Roots().FirstOrDefault(r => r.Id == Text(args, "rootId"))
         ?? throw new ArgumentException("This folder is no longer managed. Refresh and select another folder.");
     private static string Text(JsonElement args, string key) => args.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String
@@ -41,9 +43,39 @@ internal sealed class DesktopBridge(Window owner)
         {
             case "snapshot": return await Task.Run(Snapshot);
             case "insights": return await Task.Run(() => Insights(args));
-            case "addFolder":
+            case "suggestions": return await Task.Run(() => Suggestions().Select(s => new { s.Path, s.Name, s.Note }).ToArray());
+            case "chooseFolder":
                 var picker = new OpenFolderDialog { Title = "Choose a folder for ZipXP to look after" };
-                return picker.ShowDialog(owner) == true ? (await Engine.AddAsync(picker.FolderName)).Id : null;
+                if (picker.ShowDialog(owner) != true) return null;
+                pendingPick = picker.FolderName;
+                var pickedName = Path.GetFileName(pendingPick.TrimEnd('\\', '/'));
+                return new { Path = pendingPick, Name = pickedName.Length > 0 ? pickedName : pendingPick };
+            case "addFolder":
+                string target;
+                if (args.TryGetProperty("path", out var suggested) && suggested.ValueKind == JsonValueKind.String)
+                {
+                    // Only a folder ZipXP itself suggested can be added without the picker.
+                    var wantedPath = suggested.GetString()!;
+                    var matches = Suggestions().Where(s => string.Equals(s.Path, wantedPath, StringComparison.OrdinalIgnoreCase)).ToList();
+                    if (matches.Count == 0) throw new ArgumentException("That folder is no longer suggested. Choose it with Choose a folder instead.");
+                    target = matches[0].Path;
+                }
+                else target = pendingPick ?? throw new ArgumentException("Choose a folder first.");
+                var added = await Engine.AddAsync(target);
+                pendingPick = null; // keep it when the add fails, so the dialog can be retried
+                // Choosing "keep compressed automatically" in the add dialog is the user's consent, so no second prompt.
+                if (args.TryGetProperty("autoCompress", out var auto) && auto.ValueKind == JsonValueKind.True)
+                {
+                    // The folder exists now; a failure here must not strand the dialog. Auto-compression simply stays off, as the folder row shows.
+                    try { await Engine.SavePolicyAsync(added, added.Policy with { Enabled = true }); }
+                    catch (Exception ex) when (ex is IOException or ArgumentException or InvalidOperationException) { }
+                }
+                return added.Id;
+            case "discardPick": pendingPick = null; return "Cancelled.";
+            case "stop":
+                var stopping = Root(args);
+                var stopped = await Engine.StopWorkAsync(stopping.Id);
+                return stopped == 0 ? "Nothing is waiting. The current file will finish." : $"Stopped. {Plain.Count(stopped, "waiting file")} won’t be processed, and the current file will finish.";
             case "scan": Engine.RequestScan(Root(args).Id); return "Scan requested. Scanning never changes your files.";
             case "pause": await Engine.SetPausedAsync(Flag(args, "paused")); return Engine.Paused ? "Paused. The current file will finish first." : "Background work resumed.";
             case "pauseFolder": await Engine.SetFolderPausedAsync(Root(args).Id, Flag(args, "paused")); return "Folder pause setting updated.";
@@ -54,7 +86,7 @@ internal sealed class DesktopBridge(Window owner)
                 if (enabled == folder.Policy.Enabled) return "No changes made.";
                 var title = enabled ? "Turn on auto-compression" : "Turn off auto-compression";
                 var detail = enabled
-                    ? "ZipXP will compress eligible existing, new and changed files while it runs. Files will open as usual."
+                    ? "ZipXP will compress eligible existing, new and changed files while it runs. Files will open as usual.\n\nCompressed files use a little extra CPU when opened. That is usually unnoticeable on an SSD, but can be slower on a hard disk for large files you open often. You can restore files at any time."
                     : "ZipXP will stop compressing files automatically here. Compressed files will stay compressed.";
                 if (!Confirm($"{title} for {folder.Name}?\n\n{detail}" + PendingWorkNotice(folder), title)) return "No changes made.";
                 return await SavePolicyAsync(folder, folder.Policy with { Enabled = enabled });
@@ -108,6 +140,7 @@ internal sealed class DesktopBridge(Window owner)
         var measured = entries.Where(o => o.File is { Directory: false, Allocated: not null })
             .Select(o => o.File!).DistinctBy(f => f.Identity);
         var savings = Engine.Store.MeasuredSince(DateTime.MinValue);
+        var jobs = Engine.Store.Jobs();
         var volumes = new List<object>();
         foreach (var name in roots.Select(r => Path.GetPathRoot(r.Path)!).Distinct(StringComparer.OrdinalIgnoreCase))
         {
@@ -120,16 +153,108 @@ internal sealed class DesktopBridge(Window owner)
             {
                 r.Id, r.Name, r.Path, r.Policy,
                 Scan = scans.FirstOrDefault(s => s.RootId == r.Id),
+                Skips = Skips(observations[r.Id]),
+                Run = Run(r, jobs),
                 Status = Plain.Message(Engine.FolderStatus(r.Id)),
                 CanRestore = Engine.RestorableFiles(r, observations[r.Id]).Any()
             }),
-            Jobs = Engine.Store.Jobs().Select(j => new { j.Id, j.RootId, j.Path, FileName = Path.GetFileName(j.Path), j.State, StateText = Plain.JobState(j.State).Text, Action = Plain.Action(j.Operation), Message = Plain.Message(j.Message), j.Delta, Utc = j.FinishedUtc ?? j.CreatedUtc, j.Pending }),
+            Jobs = jobs.Select(j => new { j.Id, j.RootId, j.Path, FileName = Path.GetFileName(j.Path), j.State, StateText = Plain.JobState(j.State).Text, Action = Plain.Action(j.Operation), Message = Plain.Message(j.Message), j.Delta, Utc = j.FinishedUtc ?? j.CreatedUtc, j.Pending }),
             Engine.Paused, Startup = StartupRegistration.Enabled, Status = Plain.Message(Engine.Status), Engine.CurrentFile,
             Savings = new { savings.Delta, savings.Measured },
             Allocated = measured.Sum(f => f.Allocated!.Value),
             Unknown = entries.Count(e => e.File == null || (e.File.Directory == false && e.File.Allocated == null)),
             Volumes = volumes
         };
+    }
+
+    /// <summary>Progress of the folder's current or latest batch of work, derived from its jobs since the batch began.</summary>
+    private object? Run(ManagedFolder root, IReadOnlyList<WorkItem> jobs)
+    {
+        if (Engine.Store.RunStart(root.Id) is not { } start) return null;
+        // A retried file has a newer job; count each file once, by its latest attempt.
+        var mine = jobs.Where(j => j.RootId == root.Id && j.CreatedUtc >= start)
+            .GroupBy(j => (j.Expected.Identity, j.Operation)).Select(g => g.MaxBy(j => j.CreatedUtc)!).ToArray();
+        if (mine.Length == 0) return null;
+        var pending = mine.Count(j => j.Pending);
+        var running = mine.FirstOrDefault(j => j.State == "Running");
+        var waiting = pending == 0 || running != null ? null : Engine.Paused ? "Paused" : Engine.WaitingReason(root.Id);
+        return new
+        {
+            Operation = mine.MinBy(j => j.CreatedUtc)!.Operation,
+            StartedUtc = start,
+            Total = mine.Length,
+            Pending = pending,
+            Failed = mine.Count(j => j.State == "Failed"),
+            Skipped = mine.Count(j => j.State == "Skipped"),
+            SavedSoFar = mine.Where(j => j.State == "Succeeded").Sum(j => j.Delta ?? 0),
+            FinishedUtc = pending == 0 ? mine.Max(j => j.FinishedUtc ?? j.CreatedUtc) : (DateTime?)null,
+            Phase = pending == 0 ? "done" : running != null ? "working" : waiting != null ? "waiting" : "queued",
+            Waiting = waiting != null ? Plain.Message(waiting) : null,
+            CurrentFile = running == null ? null : Path.GetFileName(running.Path)
+        };
+    }
+
+    /// <summary>Why files in a scan are not candidates, so the page can tell "already compact" from "nothing compressible".</summary>
+    private static object Skips(IReadOnlyList<Observation> entries)
+    {
+        int compressed = 0, tooSmall = 0, lowBenefit = 0, excluded = 0, other = 0;
+        long compressedLogical = 0, compressedAllocated = 0;
+        foreach (var entry in entries.Where(e => e.File is { Directory: false }))
+        {
+            var reason = entry.Reason;
+            if (reason == "Candidate") continue;
+            if (reason == "Already compressed") { compressed++; compressedLogical += entry.File!.Logical; compressedAllocated += entry.File.Allocated ?? entry.File.Logical; }
+            else if (reason == "Below minimum size") tooSmall++;
+            else if (reason.StartsWith("Permanent: low estimated benefit", StringComparison.Ordinal)) lowBenefit++;
+            else if (reason == "Excluded by policy") excluded++;
+            else other++;
+        }
+        return new { AlreadyCompressed = new { Files = compressed, Logical = compressedLogical, Allocated = compressedAllocated }, TooSmall = tooSmall, LowBenefit = lowBenefit, Excluded = excluded, Other = other };
+    }
+
+    private static readonly string[] CloudFolderNames = ["OneDrive", "Dropbox", "Google Drive", "GoogleDrive", "iCloud", "Box", "pCloud", "MEGA", "Sync"];
+    private static bool IsCloudSynced(string full)
+    {
+        foreach (var variable in new[] { "OneDrive", "OneDriveConsumer", "OneDriveCommercial" })
+        {
+            var root = Environment.GetEnvironmentVariable(variable);
+            if (!string.IsNullOrWhiteSpace(root) && Scope.Within(full, Scope.Normalize(root))) return true;
+        }
+        return full.Split('\\', '/').Any(part => CloudFolderNames.Any(name => part.Equals(name, StringComparison.OrdinalIgnoreCase) || part.StartsWith(name + " ", StringComparison.OrdinalIgnoreCase) || part.StartsWith(name + "-", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    /// <summary>Well-known folders that usually compress well, on local NTFS drives and not already managed. Never synced, media or system folders.</summary>
+    private List<(string Path, string Name, string Note)> Suggestions()
+    {
+        var profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        (string Path, string Note)[] candidates =
+        [
+            (System.IO.Path.Combine(profile, "source"), "Source code and build output usually compress well."),
+            (System.IO.Path.Combine(profile, "repos"), "Source code and build output usually compress well."),
+            (System.IO.Path.Combine(profile, "code"), "Source code and build output usually compress well."),
+            (System.IO.Path.Combine(profile, "projects"), "Source code and build output usually compress well."),
+            (Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Documents, spreadsheets and text compress well."),
+            (System.IO.Path.Combine(profile, "Downloads"), "Mixed contents: installers and archives save little.")
+        ];
+        var roots = Engine.Store.Roots();
+        var suggestions = new List<(string Path, string Name, string Note)>();
+        foreach (var (candidate, note) in candidates)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(candidate) || !Directory.Exists(candidate)) continue;
+                var full = Scope.Normalize(candidate);
+                // Folders synced by OneDrive and friends hold placeholder files, which ZipXP skips.
+                if (IsCloudSynced(full)) continue;
+                if (suggestions.Any(s => string.Equals(s.Path, full, StringComparison.OrdinalIgnoreCase))) continue;
+                if (roots.Any(r => Scope.Within(full, r.Path) || Scope.Within(r.Path, full))) continue;
+                var drive = new DriveInfo(System.IO.Path.GetPathRoot(full)!);
+                if (drive.DriveType != DriveType.Fixed || !string.Equals(drive.DriveFormat, "NTFS", StringComparison.OrdinalIgnoreCase)) continue;
+                suggestions.Add((full, System.IO.Path.GetFileName(full.TrimEnd('\\', '/')), note));
+            }
+            catch (Exception ex) when (Scope.FileError(ex) || ex is ArgumentException) { }
+        }
+        return suggestions.Take(4).ToList();
     }
 
     private object Insights(JsonElement args)

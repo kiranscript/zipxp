@@ -22,6 +22,7 @@ public sealed class Engine : IAsyncDisposable
     private readonly Dictionary<string, FileSystemWatcher> watchers = [];
     private readonly Dictionary<string, DateTime> scanned = [];
     private readonly ConcurrentDictionary<string, string> statuses = new();
+    private readonly ConcurrentDictionary<string, (string Reason, DateTime Utc)> waits = new();
     private Task? loop;
     private volatile bool paused;
     private volatile string? current;
@@ -42,6 +43,17 @@ public sealed class Engine : IAsyncDisposable
     }
 
     public string FolderStatus(string id) => statuses.GetValueOrDefault(id, "Waiting for scan");
+    /// <summary>Why queued work for this folder is not running right now ("On battery", "Outside schedule"…), if it is waiting.</summary>
+    public string? WaitingReason(string id) =>
+        waits.TryGetValue(id, out var wait) && DateTime.UtcNow - wait.Utc < TimeSpan.FromSeconds(10) ? wait.Reason : null;
+
+    /// <summary>Cancels work that has not started. The file being processed right now finishes first.</summary>
+    public Task<int> StopWorkAsync(string id) => Exclusive(() =>
+    {
+        var waiting = Store.ActiveJobs().Count(j => j.RootId == id && j.State is "Queued" or "Retry");
+        Store.Cancel(id, all: true); Store.Setting("sweep:" + id, "");
+        return waiting;
+    });
     public void RequestScan(string id) => dirty[id] = DateTime.MinValue;
     public void Pause(bool value)
     {
@@ -260,7 +272,8 @@ public sealed class Engine : IAsyncDisposable
                 try { if (freeSpace(root.Path) < root.Policy.ReserveBytes + (job.Operation == "Decompress" ? job.Expected.Logical : 0)) waiting = "Low free space"; }
                 catch (Exception ex) when (Scope.FileError(ex)) { waiting = "Volume unavailable: " + ex.Message; }
             }
-            if (waiting != null) { statuses[root.Id] = waiting; continue; }
+            if (waiting != null) { statuses[root.Id] = waiting; waits[root.Id] = (waiting, DateTime.UtcNow); continue; }
+            waits.TryRemove(root.Id, out _);
             // A rename is reconciled by stable identity. A replacement at the same path is never substituted.
             var observation = Store.Observations(root.Id).FirstOrDefault(o => o.File?.Identity == job.Expected.Identity);
             var executing = observation?.File != null && observation.File.SameContent(job.Expected)

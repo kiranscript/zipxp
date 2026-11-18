@@ -133,13 +133,9 @@ try {
     if ((Find-Id 'PauseButton').Current.Name -ne 'Resume all') { Invoke-Id 'PauseButton' }
     Wait-For { (Find-Id 'PauseButton').Current.Name -eq 'Resume all' } 'Paused before enabling the automatic policy'
     Invoke-Name 'Managed folders'
-    Invoke-Name 'Folder settings*'
-    Wait-For { Find-Dialog 'Folder settings' } 'Policy editor opened'
-    $editor = Find-Dialog 'Folder settings'
-    $enable = Find-Id 'EnableBox' $editor
-    $toggle = $enable.GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern)
-    if ($toggle.Current.ToggleState -ne [Windows.Automation.ToggleState]::On) { $toggle.Toggle() }
-    Invoke-Name 'Save' $editor
+    Invoke-Id 'FolderAutomationButton'
+    Wait-For { Find-Dialog 'Turn on auto-compression' } 'Auto-compression confirmation opened from Managed folders'
+    Confirm-Yes (Find-Dialog 'Turn on auto-compression')
     Wait-For { $s = State; $s.Roots[0].Policy.Enabled -and @($s.Jobs | Where-Object { $_.State -eq 'Queued' }).Count -gt 0 } 'Default automatic policy saved and candidates queued'
     Helper -Arguments @('read', $data, (Join-Path $Evidence 'queued-state.json'))
 
@@ -211,7 +207,7 @@ try {
     }
 
     Invoke-Name 'Managed folders'
-    Invoke-Name 'Restore original size*'
+    Invoke-Name 'Restore files*'
     Wait-For { Find-Dialog 'Restore original size' } 'Recursive decompression preview displayed'
     $preview = Find-Dialog 'Restore original size'
     $previewText = $preview.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.Condition]::TrueCondition) | ForEach-Object { $_.Current.Name }
