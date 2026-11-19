@@ -5,7 +5,7 @@
 From Windows PowerShell (Windows 11 ships `curl.exe`):
 
 ```powershell
-curl.exe -fsSL https://kiranscript.github.io/zipxp/install.ps1 -o "$env:TEMP\zipxp-get.ps1"; powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\zipxp-get.ps1"
+curl.exe -fsSL https://github.com/kiranscript/zipxp/releases/latest/download/zipxp-get.ps1 -o "$env:TEMP\zipxp-get.ps1"; powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\zipxp-get.ps1"
 ```
 
 The script downloads the latest release ZIP from GitHub, checks it against the release's SHA-256 file, extracts it to a temporary folder, runs the package's own `install.ps1`, and deletes the temporary files. It needs no administrator rights and installs per user, exactly as described below. If ZipXP is running, quit it from the tray first; nothing is force-killed.
@@ -14,7 +14,7 @@ Options go after `-File`, and are passed to `install.ps1`:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\zipxp-get.ps1" -StartAtLogin -Launch
-powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\zipxp-get.ps1" -Version 0.2.0
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\zipxp-get.ps1" -Version 0.3.0
 ```
 
 `-Version` pins a release, `-Destination` and `-NoShortcut` are passed through, and the `ZIPXP_VERSION` environment variable works like `-Version`. Read the script before running it: [scripts/get.ps1](../scripts/get.ps1).

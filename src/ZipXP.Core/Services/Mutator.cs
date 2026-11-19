@@ -36,7 +36,15 @@ public sealed class Mutator(Func<string, long>? freeSpace = null)
             NativeFiles.SetCompression(handle, compress);
             var after = NativeFiles.Read(handle, job.Path);
             if (after.Compressed != compress) return new("Failed", "Expected compression state was not observed.", after);
-            long? delta = !before.Directory && before.SameContent(after) && before.Allocated.HasValue && after.Allocated.HasValue
+            // NTFS reports the final allocation only after the mutation handle is closed; reading it through the open
+            // handle overstates growth for sizes that are not cluster-aligned (#2). Measure on a fresh handle instead,
+            // and claim nothing if the file changed in between.
+            handle.Dispose();
+            FileRecord? closed = null;
+            try { closed = NativeFiles.Read(job.Path); } catch (Exception ex) when (Scope.FileError(ex)) { }
+            if (closed != null && closed.SameContent(after) && closed.Compressed == compress) after = closed;
+            else closed = null;
+            long? delta = closed != null && !before.Directory && before.SameContent(after) && before.Allocated.HasValue && after.Allocated.HasValue
                 ? before.Allocated.Value - after.Allocated.Value : null;
             return new("Succeeded", before.Directory ? "Native default cleared; existing file contents unchanged."
                 : delta.HasValue ? $"Verified. Signed allocation reduction: {Display.Bytes(delta)}." : "State verified; allocation measurement unavailable.", after, delta);

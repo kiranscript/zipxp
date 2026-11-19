@@ -80,14 +80,14 @@
   </aside>
 
   <article class="prose">
-    <div class="note note--warn"><div><b>Pre-release 0.2.</b> This is an unsigned build under active development. The development checks pass, but that doesn't make it production-ready or guarantee any amount of savings. Use disposable copies of your data for now.</div></div>
+    <div class="note note--warn"><div><b>Pre-release 0.3.</b> This is an unsigned build under active development. The development checks pass, but that doesn't make it production-ready or guarantee any amount of savings. Use disposable copies of your data for now.</div></div>
 
     <section id="quickstart">
       <h2>Quickstart</h2>
       <p>ZipXP needs Windows 11 and a local NTFS drive. Install the latest release for your user from Windows PowerShell. It needs no administrator rights:</p>
-<pre><span class="p">PS&gt; </span>curl.exe -fsSL https://kiranscript.github.io/zipxp/install.ps1 -o "$env:TEMP\zipxp-get.ps1"
+<pre><span class="p">PS&gt; </span>curl.exe -fsSL https://github.com/kiranscript/zipxp/releases/latest/download/zipxp-get.ps1 -o "$env:TEMP\zipxp-get.ps1"
 <span class="p">PS&gt; </span>powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\zipxp-get.ps1"</pre>
-      <p>The script downloads the release ZIP, verifies its SHA-256, runs the per-user installer and cleans up. Add <code>-StartAtLogin</code>, <code>-Launch</code> or <code>-Version 0.2.0</code> after <code>-File …</code> if you want them. The checksum catches a damaged download. The release also carries a GitHub build attestation, which the script verifies if the GitHub CLI is installed and signed in (<code>-RequireAttestation</code> makes that mandatory). The build is not code-signed. Until the first release is published, or if you'd rather build it yourself, use the <a href="https://dotnet.microsoft.com/download">.NET 10 SDK</a>:</p>
+      <p>The script downloads the release ZIP, verifies its SHA-256, runs the per-user installer and cleans up. Add <code>-StartAtLogin</code>, <code>-Launch</code> or <code>-Version 0.3.0</code> after <code>-File …</code> if you want them. The checksum catches a damaged download. The release also carries a GitHub build attestation, which the script verifies if the GitHub CLI is installed and signed in (<code>-RequireAttestation</code> makes that mandatory). The build is not code-signed. Until the first release is published, or if you'd rather build it yourself, use the <a href="https://dotnet.microsoft.com/download">.NET 10 SDK</a>:</p>
 <pre><span class="p">PS&gt; </span>git clone https://github.com/kiranscript/zipxp.git
 <span class="p">PS&gt; </span>cd zipxp
 <span class="p">PS&gt; </span>dotnet run --project src/ZipXP.App/ZipXP.App.csproj</pre>
@@ -162,7 +162,7 @@
       <p>State lives in <code>%LOCALAPPDATA%\ZipXP\StorageManager\storage.sqlite3</code>, plus its SQLite WAL/SHM files. SQLite is supplied by Windows' own <code>winsqlite3.dll</code>. There are no external NuGet or UI packages.</p>
       <p>After a crash, jobs that were running become retry records, and each file's actual state and identity are checked again. Files changed while ZipXP was closed are found on startup. To back up, exit the tray worker normally and copy the state directory. Newer schema versions are rejected by older builds.</p>
       <h3>Known issues</h3>
-      <p>After a restore, the app can measure a file's allocation before its handle is closed. That overstates growth for some file sizes and can show a small negative savings total. The files themselves aren't affected. Tracked in <a href="https://github.com/kiranscript/zipxp/issues/2">#2</a>. A fix (<a href="https://github.com/kiranscript/zipxp/pull/4">#4</a>) is merged on a branch but hasn't reached <code>main</code> yet.</p>
+      <p>None open. Before 0.3.0, savings after a restore could be measured while the file was still open, which overstated growth for some file sizes (<a href="https://github.com/kiranscript/zipxp/issues/2">#2</a>). 0.3.0 measures after the file is closed.</p>
     </section>
 
     <section id="verify">

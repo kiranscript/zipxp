@@ -17,7 +17,7 @@
   <a href="docs/usage.md">Docs</a>
 </p>
 
-> **Status: pre-release (0.2).** ZipXP is under active development and the build is unsigned. Try it on a folder of copies first. See [Safety](docs/safety.md).
+> **Status: pre-release (0.3).** ZipXP is under active development and the build is unsigned. Try it on a folder of copies first. See [Safety](docs/safety.md).
 
 <p align="center">
   <img src="assets/screenshots/overview.png" alt="ZipXP overview showing 48.2 MB saved by ZipXP" width="760">
@@ -37,7 +37,7 @@
 ZipXP needs Windows 11 and a local NTFS drive. Install the latest release for your user (no admin needed) from Windows PowerShell:
 
 ```powershell
-curl.exe -fsSL https://kiranscript.github.io/zipxp/install.ps1 -o "$env:TEMP\zipxp-get.ps1"; powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\zipxp-get.ps1"
+curl.exe -fsSL https://github.com/kiranscript/zipxp/releases/latest/download/zipxp-get.ps1 -o "$env:TEMP\zipxp-get.ps1"; powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\zipxp-get.ps1"
 ```
 
 It downloads the release ZIP, verifies its SHA-256 and runs the installer; see [Install and uninstall](docs/install.md) for options and what it does. The React desktop interface requires the [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
@@ -60,7 +60,7 @@ Storage insights lists what takes the room in each folder, with every file's ori
   <img src="assets/screenshots/storage-insights.png" alt="ZipXP storage insights listing per-file original size, size used now and space saved" width="760">
 </p>
 
-Compression savings depend entirely on what is in the folder. One known accounting issue (see [validation](docs/validation.md)) can overstate how much space is freed after restoring some files. Text, source code, documents and logs shrink well; photos, video and archives are already compressed and barely change. ZipXP measures the real result per file and skips files that don't benefit.
+Compression savings depend entirely on what is in the folder. Text, source code, documents and logs shrink well; photos, video and archives are already compressed and barely change. ZipXP measures the real result per file and skips files that don't benefit.
 
 ## Documentation
 
