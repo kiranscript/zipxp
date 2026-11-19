@@ -16,6 +16,7 @@ All notable changes to ZipXP are recorded here. The format follows [Keep a Chang
 ### Fixed
 - Allocation is now measured after the mutation handle is closed, so savings after a restore are no longer overstated for file sizes that are not cluster-aligned ([#2](https://github.com/kiranscript/zipxp/issues/2)).
 - The documented install command pointed at a website that is no longer deployed; it now downloads `zipxp-get.ps1` from the latest release.
+- Background work on large folders. On a 50,000-file test folder, the worker no longer loads every observation for each file it compresses (CPU during a run fell from 70 s to 12 s per 3 minutes, and throughput rose from 69 to 109 files/min). Rescans reuse sampling estimates for unchanged files and write only changed records (a rescan now reads 70 MB instead of about 1 GB and writes nothing instead of 92 MB). The safety rescan runs every 30 minutes instead of every 2, because file-system notifications already trigger a scan within seconds; it stays at 2 minutes for a folder whose watcher can't start.
 
 ### Changed
 - Repository reorganised into `src/`, `tests/`, `scripts/` and `docs/`; projects renamed from `StorageManager.*` to `ZipXP.*`.

@@ -34,6 +34,19 @@ That run found an **allocation-accounting defect** not covered by the earlier al
 
 **Fixed (2026-11-19).** The mutator now closes the mutation handle and measures on a fresh handle, and claims no saving if the file changed in between. The core suite reproduced the defect first (65,537 bytes failed), then passed 80 checks, including compress-and-restore round trips at 65,537, 100,003 and 262,147 bytes that net to exactly zero and return to the original allocation.
 
+## Large-folder load test (2026-11-19)
+
+The real engine ran against a generated 50,000-file folder (10,000 compressible text files of 100–160 KB, 40,000 of 1–8 KB, 1.4 GB) on a local NTFS SSD, with the battery and CPU gates off so they didn't hold work back. The test data was deleted afterwards.
+
+| | Before | After |
+|---|---|---|
+| Rescan of an unchanged folder | 10 s CPU, ~1 GB read, 92 MB written | 5 s CPU, 70 MB read, nothing written |
+| Rescan interval with a working watcher | 2 minutes | 30 minutes |
+| Auto-compression, 3 minutes | 69 files/min, 70 s CPU, 10.3 GB read | 109 files/min, 12 s CPU, 359 MB read |
+| Longest wait for a UI command during that run | 8.2 s (during a rescan) | 23 ms (no rescan fell in the window) |
+
+Scans still hold the engine lock, so a UI command can wait for a rescan to finish (about 5 s on this folder). The window's 3-second refresh still loads every observation (about 0.25 s CPU each time on this folder). Throughput is limited by the 500 ms pause between files by design.
+
 ## Release acceptance still required
 
 - Broad Windows/NTFS cluster-size, hardware, permissions, antivirus, and backup/restore compatibility matrix.

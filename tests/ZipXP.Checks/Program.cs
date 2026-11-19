@@ -192,6 +192,24 @@ internal static class Program
         var outOfScope = new Mutator().Execute(root, Job(root, source with { Path = Path.Combine(fixture + "-sibling", "file.txt") }, "Compress"));
         Check(outOfScope.State != "Succeeded", "sibling-prefix path cannot escape managed root");
 
+        {
+            // Rescans write only changed observations; renames and deletions must still land.
+            var tracked = Path.Combine(fixture, "tracked.txt"); Text(tracked);
+            var identity = NativeFiles.Read(tracked).Identity;
+            new Analyzer(store).Scan(store.Roots().Single());
+            var firstEstimate = store.Observations(root.Id).Single(o => o.Path == tracked).EstimatedSaving;
+            new Analyzer(store).Scan(store.Roots().Single());
+            Check(store.Observations(root.Id).Single(o => o.Path == tracked).EstimatedSaving == firstEstimate, "unchanged rescan keeps the stored estimate");
+            var renamed = Path.Combine(fixture, "Tracked-Renamed.txt"); File.Move(tracked, renamed);
+            new Analyzer(store).Scan(store.Roots().Single());
+            var afterRename = store.Observations(root.Id);
+            Check(afterRename.Any(o => o.Path == renamed) && !afterRename.Any(o => o.Path == tracked) && store.Observed(root.Id, identity)?.Path == renamed,
+                "rescan records a rename and the worker finds the file by identity");
+            File.Delete(renamed);
+            new Analyzer(store).Scan(store.Roots().Single());
+            Check(!store.Observations(root.Id).Any(o => o.Path == renamed) && store.Observed(root.Id, identity) == null, "rescan drops deleted files");
+        }
+
         var linkPath = Path.Combine(fixture, "reparse-child");
         Junction(linkPath, Path.Combine(fixture, "child"));
         {

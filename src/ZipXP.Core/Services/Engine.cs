@@ -4,7 +4,8 @@ using ZipXP.Core.Persistence;
 
 namespace ZipXP.Core.Services;
 
-public sealed record EngineOptions(int ReconcileSeconds = 120, int DebounceMilliseconds = 2000, int ScanSpacingSeconds = 15, int FileDelayMilliseconds = 500);
+// Watcher events trigger scans within seconds; the periodic reconciliation scan only catches anything they missed.
+public sealed record EngineOptions(int ReconcileSeconds = 1800, int DebounceMilliseconds = 2000, int ScanSpacingSeconds = 15, int FileDelayMilliseconds = 500);
 public sealed record JobPreview(int Files, long LogicalBytes, long RequiredHeadroom, int NativeDefaults, string Coverage);
 
 public sealed class Engine : IAsyncDisposable
@@ -233,7 +234,9 @@ public sealed class Engine : IAsyncDisposable
         foreach (var root in roots)
         {
             var last = scanned.GetValueOrDefault(root.Id, DateTime.MinValue);
-            if (last.AddSeconds(options.ReconcileSeconds) <= now || (dirty.TryGetValue(root.Id, out var due) && due <= now && (due == DateTime.MinValue || last.AddSeconds(options.ScanSpacingSeconds) <= now)))
+            // Without a watcher, the periodic scan is the only way to notice changes, so keep it frequent.
+            var reconcile = watchers.ContainsKey(root.Id) ? options.ReconcileSeconds : Math.Min(options.ReconcileSeconds, 120);
+            if (last.AddSeconds(reconcile) <= now || (dirty.TryGetValue(root.Id, out var due) && due <= now && (due == DateTime.MinValue || last.AddSeconds(options.ScanSpacingSeconds) <= now)))
             {
                 // Remove first so events arriving during a scan are retained for the next pass.
                 dirty.TryRemove(root.Id, out _);
@@ -275,7 +278,7 @@ public sealed class Engine : IAsyncDisposable
             if (waiting != null) { statuses[root.Id] = waiting; waits[root.Id] = (waiting, DateTime.UtcNow); continue; }
             waits.TryRemove(root.Id, out _);
             // A rename is reconciled by stable identity. A replacement at the same path is never substituted.
-            var observation = Store.Observations(root.Id).FirstOrDefault(o => o.File?.Identity == job.Expected.Identity);
+            var observation = Store.Observed(root.Id, job.Expected.Identity);
             var executing = observation?.File != null && observation.File.SameContent(job.Expected)
                 ? job with { Expected = job.Expected with { Path = observation.Path } } : job;
             current = executing.Path; Status = job.Operation + ": " + current;

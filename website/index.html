@@ -267,7 +267,7 @@
       <div class="step" style="--d:0s"><h3>Add a folder</h3><p>Pick a local fixed NTFS folder like <code>C:\Users\you\Projects</code>. Overlapping roots are rejected up front.</p></div>
       <div class="step" style="--d:.1s"><h3>Read-only analysis</h3><p>Allocation totals, candidate bytes, largest files, and how many directories already carry Windows' own compression flag.</p></div>
       <div class="step" style="--d:.2s"><h3>Set a policy</h3><p>Turn on automation, choose subfolders and battery behavior. Advanced options hold thresholds, schedule and reserve.</p></div>
-      <div class="step" style="--d:.3s"><h3>Queue</h3><p>Eligible files join one persistent, sequential queue. File-system notifications and a 2-minute reconciliation scan keep it current.</p></div>
+      <div class="step" style="--d:.3s"><h3>Queue</h3><p>Eligible files join one persistent, sequential queue. File-system notifications keep it current, and a 30-minute reconciliation scan catches anything they miss.</p></div>
       <div class="step" style="--d:.4s"><h3>Compress</h3><p>One file at a time, below-normal priority, through a validated native handle. Busy files retry with backoff.</p></div>
       <div class="step" style="--d:.5s"><h3>Measure</h3><p>Actual allocation is read back from the same handle. Poor-benefit files are cached and left alone until their content changes.</p></div>
     </div>
