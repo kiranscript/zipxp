@@ -59,7 +59,7 @@
   <div class="container">
     <div class="crumbs"><a href="./">ZipXP</a> / Documentation</div>
     <h1>Getting started</h1>
-    <p>Everything you need to run, use, verify and package ZipXP. It's a Windows 11 app built with C#, WPF and .NET 10, using ordinary NTFS compression.</p>
+    <p>Everything you need to run, use, verify and package ZipXP. It's a Windows 11 app built with C# and .NET 10, with a React interface hosted in WebView2, using ordinary NTFS compression.</p>
   </div>
 </section>
 
@@ -87,7 +87,7 @@
       <p>ZipXP needs Windows 11 and a local NTFS drive. Install the latest release for your user from Windows PowerShell. It needs no administrator rights:</p>
 <pre><span class="p">PS&gt; </span>curl.exe -fsSL https://github.com/kiranscript/zipxp/releases/latest/download/zipxp-get.ps1 -o "$env:TEMP\zipxp-get.ps1"
 <span class="p">PS&gt; </span>powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\zipxp-get.ps1"</pre>
-      <p>The script downloads the release ZIP, verifies its SHA-256, runs the per-user installer and cleans up. Add <code>-StartAtLogin</code>, <code>-Launch</code> or <code>-Version 0.3.0</code> after <code>-File …</code> if you want them. The checksum catches a damaged download. The release also carries a GitHub build attestation, which the script verifies if the GitHub CLI is installed and signed in (<code>-RequireAttestation</code> makes that mandatory). The build is not code-signed. Until the first release is published, or if you'd rather build it yourself, use the <a href="https://dotnet.microsoft.com/download">.NET 10 SDK</a>:</p>
+      <p>The script downloads the release ZIP, verifies its SHA-256, runs the per-user installer and cleans up. Add <code>-StartAtLogin</code>, <code>-Launch</code> or <code>-Version 0.3.0</code> after <code>-File …</code> if you want them. The checksum catches a damaged download. The release also carries a GitHub build attestation, which the script verifies if the GitHub CLI is installed and signed in (<code>-RequireAttestation</code> makes that mandatory). The build is not code-signed. The app needs the <a href="https://developer.microsoft.com/microsoft-edge/webview2/">Microsoft Edge WebView2 Runtime</a>, which Windows 11 normally includes. To build it yourself instead, use the <a href="https://dotnet.microsoft.com/download">.NET 10 SDK</a> and Node.js 22.12+:</p>
 <pre><span class="p">PS&gt; </span>git clone https://github.com/kiranscript/zipxp.git
 <span class="p">PS&gt; </span>cd zipxp
 <span class="p">PS&gt; </span>dotnet run --project src/ZipXP.App/ZipXP.App.csproj</pre>
@@ -170,7 +170,7 @@
 <pre><span class="c"># From the repository root on Windows</span>
 <span class="p">PS&gt; </span>.\scripts\check.ps1
 <span class="p">PS&gt; </span>.\scripts\check.ps1 -Dotnet C:\Temp\zipxp-dotnet\dotnet.exe</pre>
-      <p>The check harness uses the real core library on a fresh, disposable NTFS directory. It tests real compression, hashes, locks, hard links, folder compression flags, file replacements and the automatic worker. It also launches the actual WPF window and navigates it through native UI Automation. See the <a href="https://github.com/kiranscript/zipxp/blob/main/docs/validation.md">validation record</a> for what has been tested and what's still missing.</p>
+      <p>The check harness uses the real core library on a fresh, disposable NTFS directory. It tests real compression, hashes, locks, hard links, folder compression flags, file replacements and the automatic worker. It also launches the actual app window, in both the React and WPF interfaces, and navigates it through native UI Automation. See the <a href="https://github.com/kiranscript/zipxp/blob/main/docs/validation.md">validation record</a> for what has been tested and what's still missing.</p>
     </section>
 
     <section id="install">
@@ -185,7 +185,8 @@
     <section id="layout">
       <h2>Source layout</h2>
 <pre>src/ZipXP.Core/          Models, native handles/identities, SQLite store, analysis, rules, worker
-src/ZipXP.App/           WPF dashboard, controls, tray/single-instance/startup
+src/ZipXP.App/           WebView2 host, WPF fallback, tray/single-instance/startup
+src/ZipXP.UI/            React + TypeScript interface
 tests/ZipXP.Checks/      Real-service policy, native, persistence and automation checks
 tests/ZipXP.FolderTest/  Helper used by scripts/test-existing-folder.ps1
 scripts/                 dev.sh (WSL launcher), check, publish, install, uninstall
