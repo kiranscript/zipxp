@@ -18,7 +18,8 @@ try {
     } while ([DateTime]::UtcNow -lt $deadline)
     if ($app.HasExited -or $app.MainWindowHandle -eq 0 -or $app.MainWindowTitle -notlike 'ZipXP*') { throw 'Published app window not found.' }
     Write-Host 'PASS: installed self-contained executable opens the dashboard.'
-    if (-not $app.WaitForExit(25000)) { throw 'Installed app did not exit gracefully.' }
+    # --launch-check quits on its own after 40 s (App.xaml.cs); allow for that plus a graceful shutdown.
+    if (-not $app.WaitForExit(70000)) { throw 'Installed app did not exit gracefully.' }
     if ($app.ExitCode -ne 0) { throw "Installed app exited with $($app.ExitCode)." }
 } finally { $app.Dispose() }
 & (Join-Path $destination 'uninstall.ps1') -Destination $destination
