@@ -173,7 +173,7 @@
       var scope = btn.closest("[data-tabs]") || btn.parentElement;
       var pre = $("pre:not([hidden])", scope);
       if (!pre) return;
-      var text = $$(".line", pre).map(function (l) { return l.textContent; }).join("\n") || pre.textContent;
+      var text = $$(".line:not([data-nocopy])", pre).map(function (l) { return l.textContent; }).join("\n") || pre.textContent;
       var ok = function () { btn.textContent = "Copied"; setTimeout(function () { btn.textContent = "Copy"; }, 1500); };
       if (navigator.clipboard) navigator.clipboard.writeText(text).then(ok, function () {});
     });

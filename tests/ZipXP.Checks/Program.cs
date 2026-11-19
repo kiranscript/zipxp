@@ -160,6 +160,20 @@ internal static class Program
         Check(decompressed.State == "Succeeded" && !decompressed.After!.Compressed && decompressed.Delta < 0, "decompression reports signed allocation growth");
         store.SaveJob(Job(root, result.After!, "Decompress") with { State = "Succeeded", Delta = decompressed.Delta, FinishedUtc = DateTime.UtcNow });
         Check(store.MeasuredSince(DateTime.MinValue).Delta == 0, "compression followed by decompression has zero net measured reduction");
+        // Issue #2: sizes that are not cluster-aligned used to be measured while the mutation handle was still open,
+        // which overstated the growth after decompression.
+        foreach (var size in new[] { 65537, 100003, 262147 })
+        {
+            var oddPath = Path.Combine(fixture, $"odd-{size}.txt"); Text(oddPath, size);
+            var original = NativeFiles.Read(oddPath);
+            var packed = new Mutator().Execute(root, Job(root, original, "Compress"));
+            var unpacked = new Mutator().Execute(root, Job(root, packed.After!, "Decompress"));
+            var final = NativeFiles.Read(oddPath);
+            Check(packed.Delta == original.Allocated - packed.After!.Allocated && unpacked.Delta == packed.After.Allocated - final.Allocated,
+                $"{size}-byte measurements match the allocation seen after the handle closes");
+            Check(packed.Delta + unpacked.Delta == original.Allocated - final.Allocated && final.Allocated == original.Allocated,
+                $"{size}-byte compress and restore round trip nets to zero");
+        }
 
         var locked = NativeFiles.Read(Path.Combine(fixture, "locked.txt"));
         using (var exclusive = new FileStream(locked.Path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
@@ -177,6 +191,24 @@ internal static class Program
         Check(new Mutator().Execute(root, Job(root, changed, "Compress")).State == "Skipped", "changed contents invalidate queued snapshot");
         var outOfScope = new Mutator().Execute(root, Job(root, source with { Path = Path.Combine(fixture + "-sibling", "file.txt") }, "Compress"));
         Check(outOfScope.State != "Succeeded", "sibling-prefix path cannot escape managed root");
+
+        {
+            // Rescans write only changed observations; renames and deletions must still land.
+            var tracked = Path.Combine(fixture, "tracked.txt"); Text(tracked);
+            var identity = NativeFiles.Read(tracked).Identity;
+            new Analyzer(store).Scan(store.Roots().Single());
+            var firstEstimate = store.Observations(root.Id).Single(o => o.Path == tracked).EstimatedSaving;
+            new Analyzer(store).Scan(store.Roots().Single());
+            Check(store.Observations(root.Id).Single(o => o.Path == tracked).EstimatedSaving == firstEstimate, "unchanged rescan keeps the stored estimate");
+            var renamed = Path.Combine(fixture, "Tracked-Renamed.txt"); File.Move(tracked, renamed);
+            new Analyzer(store).Scan(store.Roots().Single());
+            var afterRename = store.Observations(root.Id);
+            Check(afterRename.Any(o => o.Path == renamed) && !afterRename.Any(o => o.Path == tracked) && store.Observed(root.Id, identity)?.Path == renamed,
+                "rescan records a rename and the worker finds the file by identity");
+            File.Delete(renamed);
+            new Analyzer(store).Scan(store.Roots().Single());
+            Check(!store.Observations(root.Id).Any(o => o.Path == renamed) && store.Observed(root.Id, identity) == null, "rescan drops deleted files");
+        }
 
         var linkPath = Path.Combine(fixture, "reparse-child");
         Junction(linkPath, Path.Combine(fixture, "child"));

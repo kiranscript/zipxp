@@ -17,6 +17,10 @@ public sealed class Analyzer(Store store)
         long logical = 0, allocated = 0, candidates = 0, estimate = 0;
         int files = 0, unknown = 0, errors = 0, defaults = NativeFiles.Read(root.Path).Compressed ? 1 : 0;
         var complete = true;
+        // Sampling reads up to 96 KB per candidate. Reuse the last estimate while a file's content is unchanged.
+        var estimates = new Dictionary<string, (FileRecord File, long Saving)>(StringComparer.OrdinalIgnoreCase);
+        foreach (var previous in store.Observations(root.Id))
+            if (previous is { File: { Directory: false } file, EstimatedSaving: long saving }) estimates.TryAdd(previous.Path, (file, saving));
         while (pending.TryPop(out var directory))
         {
             token.ThrowIfCancellationRequested();
@@ -53,9 +57,9 @@ public sealed class Analyzer(Store store)
                         long? saving = null;
                         if (reason == null)
                         {
-                            saving = Rules.Estimate(file);
-                            var fresh = NativeFiles.Read(path);
-                            if (!file.SameContent(fresh)) reason = "Changed during sampling; rescan pending";
+                            var reused = estimates.TryGetValue(path, out var cached) && cached.File.SameContent(file);
+                            saving = reused ? cached.Saving : Rules.Estimate(file);
+                            if (!reused && !file.SameContent(NativeFiles.Read(path))) reason = "Changed during sampling; rescan pending";
                             else if (saving < root.Policy.MinimumSavingBytes)
                             {
                                 reason = "Permanent: low estimated benefit until content changes";

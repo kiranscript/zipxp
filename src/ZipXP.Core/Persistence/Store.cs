@@ -7,6 +7,8 @@ public sealed class Store : IDisposable
     private readonly Sqlite db;
     public string DatabasePath { get; }
     public const int QueueLimit = 2000;
+    // The latest scan's files by stable identity, so the worker can follow a rename without loading every observation.
+    private readonly Dictionary<string, Dictionary<string, Observation>> identities = [];
 
     public Store(string path)
     {
@@ -39,25 +41,59 @@ public sealed class Store : IDisposable
     private static T Read<T>(string? value) => JsonSerializer.Deserialize<T>(value!)!;
     public IReadOnlyList<ManagedFolder> Roots() => db.Query("SELECT data FROM roots ORDER BY path").Select(row => Read<ManagedFolder>(row[0])).ToArray();
     public void SaveRoot(ManagedFolder root) => db.Query("INSERT INTO roots VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET path=excluded.path,data=excluded.data", root.Id, root.Path, Json(root));
-    public void RemoveRoot(string id) => db.Transaction(() =>
+    public void RemoveRoot(string id)
     {
-        Cancel(id, true);
-        db.Query("DELETE FROM roots WHERE id=?", id);
-        db.Query("DELETE FROM observations WHERE root=?", id);
-        db.Query("DELETE FROM decisions WHERE root=?", id);
-    });
+        db.Transaction(() =>
+        {
+            Cancel(id, true);
+            db.Query("DELETE FROM roots WHERE id=?", id);
+            db.Query("DELETE FROM observations WHERE root=?", id);
+            db.Query("DELETE FROM decisions WHERE root=?", id);
+        });
+        lock (identities) identities.Remove(id);
+    }
     public IReadOnlyList<Observation> Observations(string root) => db.Query("SELECT data FROM observations WHERE root=?", root).Select(row => Read<Observation>(row[0])).ToArray();
     public IReadOnlyList<ScanSummary> Scans(string? root = null) => db.Query("SELECT data FROM scans WHERE (? IS NULL OR root=?) ORDER BY id DESC LIMIT 500", root, root).Select(row => Read<ScanSummary>(row[0])).ToArray();
 
-    public void SaveScan(string root, IEnumerable<Observation> observations, ScanSummary summary) => db.Transaction(() =>
+    /// <summary>The latest scan's entry for a file identity, wherever that file has been renamed to.</summary>
+    public Observation? Observed(string root, string identity)
     {
-        db.Query("DELETE FROM observations WHERE root=?", root);
-        foreach (var observation in observations) db.Query("INSERT INTO observations VALUES(?,?,?)", root, observation.Path, Json(observation));
-        db.Query("INSERT INTO scans(root,time,data) VALUES(?,?,?)", root, summary.Utc.ToString("O"), Json(summary));
-        db.Query("DELETE FROM scans WHERE id NOT IN (SELECT id FROM scans ORDER BY id DESC LIMIT 2000)");
-        db.Query("DELETE FROM decisions WHERE time < ?", DateTime.UtcNow.AddDays(-90).ToString("O"));
-        db.Query("DELETE FROM jobs WHERE state NOT IN ('Queued','Retry','Running') AND id NOT IN (SELECT id FROM jobs ORDER BY created DESC LIMIT 10000)");
-    });
+        lock (identities)
+        {
+            if (!identities.TryGetValue(root, out var map)) identities[root] = map = Index(Observations(root));
+            return map.GetValueOrDefault(identity);
+        }
+    }
+
+    private static Dictionary<string, Observation> Index(IEnumerable<Observation> observations)
+    {
+        var map = new Dictionary<string, Observation>(StringComparer.Ordinal);
+        foreach (var observation in observations) if (observation.File != null) map.TryAdd(observation.File.Identity, observation);
+        return map;
+    }
+
+    public void SaveScan(string root, IEnumerable<Observation> observations, ScanSummary summary)
+    {
+        var entries = observations.ToList();
+        db.Transaction(() =>
+        {
+            // Write only what changed: an idle folder's rescan should not rewrite its whole history.
+            var stored = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var row in db.Query("SELECT path,data FROM observations WHERE root=?", root)) stored[row[0]!] = row[1]!;
+            foreach (var observation in entries)
+            {
+                var data = Json(observation);
+                if (stored.Remove(observation.Path, out var previous) && previous == data) continue;
+                db.Query("INSERT INTO observations VALUES(?,?,?) ON CONFLICT(root,path) DO UPDATE SET path=excluded.path,data=excluded.data", root, observation.Path, data);
+            }
+            foreach (var gone in stored.Keys) db.Query("DELETE FROM observations WHERE root=? AND path=?", root, gone);
+            db.Query("INSERT INTO scans(root,time,data) VALUES(?,?,?)", root, summary.Utc.ToString("O"), Json(summary));
+            db.Query("DELETE FROM scans WHERE id NOT IN (SELECT id FROM scans ORDER BY id DESC LIMIT 2000)");
+            db.Query("DELETE FROM decisions WHERE time < ?", DateTime.UtcNow.AddDays(-90).ToString("O"));
+            db.Query("DELETE FROM jobs WHERE state NOT IN ('Queued','Retry','Running') AND id NOT IN (SELECT id FROM jobs ORDER BY created DESC LIMIT 10000)");
+        });
+        lock (identities) identities[root] = Index(entries);
+    }
 
     public IReadOnlyList<WorkItem> Jobs() => db.Query("SELECT data FROM jobs ORDER BY created DESC").Select(row => Read<WorkItem>(row[0])).ToArray();
     public DateTime? RunStart(string root) =>

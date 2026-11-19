@@ -4,7 +4,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <Product>ZipXP</Product>
     <Authors>kiran kumar</Authors>
     <Copyright>Copyright (c) 2026 kiran kumar</Copyright>

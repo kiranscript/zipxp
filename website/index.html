@@ -9,9 +9,9 @@
   <meta property="og:title" content="ZipXP: reclaim disk space without renaming a thing">
   <meta property="og:description" content="Policy-driven, measured, reversible NTFS compression for Windows 11. Runs quietly in the tray.">
   <meta property="og:type" content="website">
-  <meta property="og:image" content="https://kiranscript.github.io/zipxp/assets/social-preview.png">
+  <meta property="og:image" content="https://zipxp.pages.dev/assets/social-preview.png">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="canonical" href="https://kiranscript.github.io/zipxp/">
+  <link rel="canonical" href="https://zipxp.pages.dev/">
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -53,7 +53,7 @@
 </svg>
 
 <div class="announce">
-  <span class="pill">Pre-release 0.2</span>
+  <span class="pill">Pre-release 0.3</span>
   ZipXP is an unsigned build under active development. Try it on a folder of copies first.
   <a href="docs.html#boundaries">Read the limits →</a>
 </div>
@@ -100,7 +100,7 @@
   </div>
   <div class="container hero__inner">
     <div>
-      <span class="eyebrow-chip"><b>0.2</b> The fix for a full disk, on Windows 11</span>
+      <span class="eyebrow-chip"><b>0.3</b> The fix for a full disk, on Windows 11</span>
       <h1>More space.<br>Same files.</h1>
       <p class="hero__lede">
         ZipXP shrinks the files in the folders you pick, in place, using Windows' built-in NTFS compression.
@@ -142,7 +142,7 @@
       <li><svg><use href="#i-win"/></svg>Windows 11</li>
       <li><svg><use href="#i-disk"/></svg>NTFS</li>
       <li><svg><use href="#i-package"/></svg>.NET 10</li>
-      <li><svg><use href="#i-home"/></svg>WPF Fluent</li>
+      <li><svg><use href="#i-home"/></svg>WebView2</li>
       <li><svg><use href="#i-db"/></svg>winsqlite3</li>
     </ul>
   </div>
@@ -267,9 +267,9 @@
       <div class="step" style="--d:0s"><h3>Add a folder</h3><p>Pick a local fixed NTFS folder like <code>C:\Users\you\Projects</code>. Overlapping roots are rejected up front.</p></div>
       <div class="step" style="--d:.1s"><h3>Read-only analysis</h3><p>Allocation totals, candidate bytes, largest files, and how many directories already carry Windows' own compression flag.</p></div>
       <div class="step" style="--d:.2s"><h3>Set a policy</h3><p>Turn on automation, choose subfolders and battery behavior. Advanced options hold thresholds, schedule and reserve.</p></div>
-      <div class="step" style="--d:.3s"><h3>Queue</h3><p>Eligible files join one persistent, sequential queue. File-system notifications and a 2-minute reconciliation scan keep it current.</p></div>
+      <div class="step" style="--d:.3s"><h3>Queue</h3><p>Eligible files join one persistent, sequential queue. File-system notifications keep it current, and a 30-minute reconciliation scan catches anything they miss.</p></div>
       <div class="step" style="--d:.4s"><h3>Compress</h3><p>One file at a time, below-normal priority, through a validated native handle. Busy files retry with backoff.</p></div>
-      <div class="step" style="--d:.5s"><h3>Measure</h3><p>Actual allocation is read back from the same handle. Poor-benefit files are cached and left alone until their content changes.</p></div>
+      <div class="step" style="--d:.5s"><h3>Measure</h3><p>Actual allocation is read back once the file is closed. Poor-benefit files are cached and left alone until their content changes.</p></div>
     </div>
   </div>
 </section>
@@ -350,7 +350,7 @@
       <div class="pstage"><span class="pn">02</span><div class="pic"><svg><use href="#i-id"/></svg></div><h3>Prove identity</h3><p>Resolved path and stable <code>FILE_ID_INFO</code> must match the scan.</p></div>
       <div class="pstage"><span class="pn">03</span><div class="pic"><svg><use href="#i-check"/></svg></div><h3>Validate metadata</h3><p>Length and last-write time are re-checked fresh. Changed files wait for a rescan.</p></div>
       <div class="pstage"><span class="pn">04</span><div class="pic"><svg><use href="#i-compress"/></svg></div><h3>Compress natively</h3><p><code>FSCTL_SET_COMPRESSION</code> on that same handle. One file at a time.</p></div>
-      <div class="pstage"><span class="pn">05</span><div class="pic"><svg><use href="#i-measure"/></svg></div><h3>Read it back</h3><p>Actual state and allocation are read from the handle and written to the ledger exactly once.</p></div>
+      <div class="pstage"><span class="pn">05</span><div class="pic"><svg><use href="#i-measure"/></svg></div><h3>Read it back</h3><p>The new state is confirmed on the handle. Allocation is measured after it closes and written to the ledger exactly once.</p></div>
     </div>
 
     <div class="excl">
@@ -399,7 +399,7 @@
     </div>
     <div class="callout reveal">
       <svg><use href="#i-warn"/></svg>
-      <div><b>No marketing math.</b> The measured reduction is a running total of past operations. It doesn't claim that much free space exists right now, and it doesn't claim savings still remain after you delete files. Already-compressed, interrupted, or unmeasured jobs add nothing.<br><b>Known issue:</b> after a restore, growth can be measured before the file handle closes, which overstates it for some file sizes and can show a small negative total. Your files aren't affected. Tracked in <a href="https://github.com/kiranscript/zipxp/issues/2">#2</a>. A fix (<a href="https://github.com/kiranscript/zipxp/pull/4">#4</a>) is merged on a branch but hasn't reached <code>main</code> yet.</div>
+      <div><b>No marketing math.</b> The measured reduction is a running total of past operations. It doesn't claim that much free space exists right now, and it doesn't claim savings still remain after you delete files. Already-compressed, interrupted, or unmeasured jobs add nothing.</div>
     </div>
   </div>
 </section>
@@ -408,7 +408,7 @@
 <section class="section section--soft section--tight" aria-label="By the numbers">
   <div class="container">
     <div class="stats">
-      <div class="stat reveal"><strong data-count="68">68</strong><span>native and core checks passing on a real NTFS volume</span></div>
+      <div class="stat reveal"><strong data-count="83">83</strong><span>native and core checks passing on a real NTFS volume</span></div>
       <div class="stat reveal" style="--d:.08s"><strong>0</strong><span>external NuGet or UI packages. SQLite comes from Windows itself.</span></div>
       <div class="stat reveal" style="--d:.16s"><strong>1</strong><span>sequential worker per user, with no service and no elevation</span></div>
       <div class="stat reveal" style="--d:.24s"><strong data-count="4">4</strong><span>app screens launched and navigated by native UI Automation in the checks</span></div>
@@ -440,11 +440,11 @@
       <div class="term__body">
         <button class="copy" data-copy type="button">Copy</button>
 <pre role="tabpanel" id="t-curl" aria-labelledby="tab-curl"><span class="c"># Install the latest release for this user (no admin)</span>
-<span class="p">PS&gt; </span><span class="line"><span class="k">curl.exe</span> -fsSL https://kiranscript.github.io/zipxp/install.ps1 -o <span class="s">"$env:TEMP\zipxp-get.ps1"</span></span>
+<span class="p">PS&gt; </span><span class="line"><span class="k">curl.exe</span> -fsSL https://github.com/kiranscript/zipxp/releases/latest/download/zipxp-get.ps1 -o <span class="s">"$env:TEMP\zipxp-get.ps1"</span></span>
 <span class="p">PS&gt; </span><span class="line">powershell -NoProfile -ExecutionPolicy Bypass -File <span class="s">"$env:TEMP\zipxp-get.ps1"</span></span>
 
 <span class="c"># Optional: start at sign-in and launch now</span>
-<span class="p">PS&gt; </span><span class="line">powershell -NoProfile -ExecutionPolicy Bypass -File <span class="s">"$env:TEMP\zipxp-get.ps1"</span> -StartAtLogin -Launch</span></pre>
+<span class="p">PS&gt; </span><span class="line" data-nocopy>powershell -NoProfile -ExecutionPolicy Bypass -File <span class="s">"$env:TEMP\zipxp-get.ps1"</span> -StartAtLogin -Launch</span></pre>
 <pre role="tabpanel" id="t-quick" aria-labelledby="tab-quick" hidden><span class="c"># Clone and run (Windows, .NET 10 SDK)</span>
 <span class="p">PS&gt; </span><span class="line">git clone https://github.com/kiranscript/zipxp.git</span>
 <span class="p">PS&gt; </span><span class="line">cd zipxp</span>
@@ -530,11 +530,11 @@
       </details>
       <details>
         <summary>Is it ready for production use?</summary>
-        <div class="ans"><p>Not yet. ZipXP 0.2 is an unsigned pre-release. The development checks pass, but broader hardware and antivirus compatibility testing, a release signing certificate, and a real user pilot are still to come. Use disposable copies of your data until then. See <a href="docs.html#boundaries">boundaries</a>.</p></div>
+        <div class="ans"><p>Not yet. ZipXP 0.3 is an unsigned pre-release. The development checks pass, but broader hardware and antivirus compatibility testing, a release signing certificate, and a real user pilot are still to come. Use disposable copies of your data until then. See <a href="docs.html#boundaries">boundaries</a>.</p></div>
       </details>
       <details>
         <summary>Is there an installer to download?</summary>
-        <div class="ans"><p>Yes, once a release is published: a one-line <code>curl.exe</code> command downloads the ZIP, verifies its SHA-256 and installs per user (see the <a href="docs.html#quickstart">quickstart</a>). Release ZIPs carry a GitHub build attestation, and the script checks it when the GitHub CLI is installed. The build is not code-signed. You can also build it from source with the .NET 10 SDK, or run <code>scripts\publish.ps1</code> to make the same self-contained ZIP yourself.</p></div>
+        <div class="ans"><p>Yes. A one-line <code>curl.exe</code> command downloads the ZIP, verifies its SHA-256 and installs per user (see the <a href="docs.html#quickstart">quickstart</a>). Release ZIPs carry a GitHub build attestation, and the script checks it when the GitHub CLI is installed. The build is not code-signed. You can also build it from source with the .NET 10 SDK, or run <code>scripts\publish.ps1</code> to make the same self-contained ZIP yourself.</p></div>
       </details>
       <details>
         <summary>Where is my data stored?</summary>
@@ -554,7 +554,7 @@
     <div class="cta__card reveal">
       <div>
         <h2 class="h-lg">Give your SSD some breathing room.</h2>
-        <p>Clone the repo, start it with <code>dotnet run</code>, and add a folder of copies. ZipXP analyzes it before it changes a single byte.</p>
+        <p>Install it with one PowerShell command, no admin needed, and add a folder of copies. ZipXP analyzes it before it changes a single byte.</p>
       </div>
       <div class="cta__actions">
         <a class="btn btn--lg" href="docs.html#quickstart">Read the quickstart <i class="arrow"></i></a>
